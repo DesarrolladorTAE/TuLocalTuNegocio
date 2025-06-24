@@ -214,7 +214,7 @@ const HeaderOne = () => {
                   </span>
                   Create Account
                 </Link>
-                <div className="language-select flx-align select-has-icon">
+                {/* <div className="language-select flx-align select-has-icon">
                   <img
                     src="assets/images/icons/globe.svg"
                     alt=""
@@ -231,7 +231,7 @@ const HeaderOne = () => {
                     <option value={3}>Eur</option>
                     <option value={4}>Urd</option>
                   </select>
-                </div>
+                </div> */}
               </div>
               <button
                 type="button"
@@ -410,7 +410,7 @@ const HeaderOne = () => {
                 </span>
                 Create Account
               </Link>
-              <div className="language-select flx-align select-has-icon">
+              {/* <div className="language-select flx-align select-has-icon">
                 <img
                   src="assets/images/icons/globe.svg"
                   alt=""
@@ -427,7 +427,7 @@ const HeaderOne = () => {
                   <option value={3}>Eur</option>
                   <option value={4}>Urd</option>
                 </select>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
