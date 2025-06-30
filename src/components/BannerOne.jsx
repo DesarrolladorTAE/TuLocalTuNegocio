@@ -25,18 +25,17 @@ const BannerOne = () => {
               <div className="hero-inner position-relative pe-lg-5">
                 <div>
                   <h1 className="hero-inner__title">
-                    2M+ curated digital products
+                    +2M de productos en las Mejores Tiendas.
                   </h1>
                   <p className="hero-inner__desc font-18">
-                    Explore the best premium themes and plugins available for
-                    sale. Our unique collection is hand-curated by experts. Find
-                    and buy the perfect premium theme today.
+                    Conecta con las mejores tiendas locales, directo y sin intermediarios
+                    Tú eliges, ellos te contactan. Explora, cotiza y recibe tu pedido sin complicaciones.
                   </p>
                   <div className="search-box">
                     <input
                       type="text"
                       className="common-input common-input--lg pill shadow-sm"
-                      placeholder="Search theme, plugins & more..."
+                      placeholder="¿Qué estás buscando hoy?"
                     />
                     <button
                       type="submit"
@@ -51,7 +50,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="WordPress"
+                      data-bs-title="Accesorios de Belleza"
                     >
                       <img
                         src="assets/images/thumbs/tech-icon1.png"
@@ -68,7 +67,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="Laravel"
+                      data-bs-title="Autos y mas"
                     >
                       <img src="assets/images/thumbs/tech-icon2.png" alt="" />
                     </Link>
@@ -76,7 +75,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="PHP"
+                      data-bs-title="Bares Cafes Restaurantes"
                     >
                       <img
                         src="assets/images/thumbs/tech-icon3.png"
@@ -93,7 +92,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="HTML"
+                      data-bs-title="Cerrajerias"
                     >
                       <img src="assets/images/thumbs/tech-icon4.png" alt="" />
                     </Link>
@@ -101,7 +100,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="Sketch"
+                      data-bs-title="Deportes"
                     >
                       <img src="assets/images/thumbs/tech-icon5.png" alt="" />
                     </Link>
@@ -109,7 +108,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="Figma"
+                      data-bs-title="Dulcerias"
                     >
                       <img src="assets/images/thumbs/tech-icon6.png" alt="" />
                     </Link>
@@ -117,7 +116,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="Bootstrap"
+                      data-bs-title="Esteticas - Barber Shop"
                     >
                       <img src="assets/images/thumbs/tech-icon7.png" alt="" />
                     </Link>
@@ -125,7 +124,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="Tailwind"
+                      data-bs-title="Farmacias"
                     >
                       <img src="assets/images/thumbs/tech-icon8.png" alt="" />
                     </Link>
@@ -133,7 +132,7 @@ const BannerOne = () => {
                       className="product-category-list__item"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
-                      data-bs-title="React"
+                      data-bs-title="Ferreterias"
                     >
                       <img src="assets/images/thumbs/tech-icon9.png" alt="" />
                     </Link>
