@@ -1,6 +1,6 @@
 import React from "react";
 import Preloader from "../helper/Preloader";
-import SaleOffer from "../components/SaleOffer";
+// import SaleOffer from "../components/SaleOffer";
 import HeaderOne from "../components/HeaderOne";
 import BannerOne from "../components/BannerOne";
 import PopularOne from "../components/PopularOne";
@@ -22,7 +22,7 @@ const HomePage = () => {
     <Preloader />
 
     {/* SaleOffer */}
-    <SaleOffer />
+    {/* <SaleOffer /> */}
 
     {/* HeaderOne */}
     <HeaderOne />

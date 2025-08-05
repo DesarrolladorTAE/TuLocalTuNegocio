@@ -33,11 +33,16 @@
 
 .logo {
     img {
-        max-width: 224px;
+        max-width: 424px;
         @include sm-screen {
             max-width: 160px;
         }
     }
+}
+@media (min-width: 768px) {
+  .home-button {
+    display: none !important;
+  }
 }
 
 @media (max-width: 1199px) {

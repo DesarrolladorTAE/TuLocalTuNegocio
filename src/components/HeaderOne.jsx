@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import { Link, NavLink } from "react-router-dom";
@@ -27,9 +26,7 @@ const HeaderOne = () => {
     for (let i = 0; i < numMenuExpand; i++) {
       menuExpand[i].addEventListener("click", sideMenuExpand);
     }
-
   }, []);
-
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,9 +36,9 @@ const HeaderOne = () => {
         setScroll(true);
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -59,37 +56,25 @@ const HeaderOne = () => {
           <nav className="header-inner flx-between">
             {/* Logo Start */}
             <div className="logo">
-              <Link to="/" className="link white-version" >
-                <img src="assets/images/logo/logo-two.png" alt="Logo" />
+              <Link to="/" className="link white-version">
+                <img src="assets/images/logo/logo.png" alt="Logo" />
               </Link>
               <Link to="/" className="link dark-version">
-                <img src="assets/images/logo/white-logo.png" alt="Logo" />
+                <img src="assets/images/logo/white-logo-two.png" alt="Logo" />
               </Link>
             </div>
             {/* Logo End  */}
             {/* Menu Start  */}
             <div className="header-menu d-lg-block d-none">
               <ul className="nav-menu flx-align">
-                <li className="nav-menu__item has-submenu">
-                  <Link to="#" className="nav-menu__link">
-                    Home
-                  </Link>
-                  <ul className="nav-submenu">
-                    <li className="nav-submenu__item">
-                      <NavLink to="/" className="nav-submenu__link">
-                        Home One
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink to="/index-two" className="nav-submenu__link">
-                        Home Two
-                      </NavLink>
-                    </li>
-                  </ul>
+                <li className="nav-menu__item">
+                  <NavLink to="/" className="nav-menu__link">
+                    Inicio
+                  </NavLink>
                 </li>
                 <li className="nav-menu__item has-submenu">
                   <Link to="#" className="nav-menu__link">
-                    Products
+                    Productos
                   </Link>
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
@@ -109,7 +94,7 @@ const HeaderOne = () => {
                 </li>
                 <li className="nav-menu__item has-submenu">
                   <Link to="#" className="nav-menu__link">
-                    Pages
+                    Categorias
                   </Link>
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
@@ -152,12 +137,11 @@ const HeaderOne = () => {
                 </li>
                 <li className="nav-menu__item has-submenu">
                   <Link to="#" className="nav-menu__link">
-                    Blog
+                    Tiendas
                   </Link>
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
                       <NavLink to="/blog" className="nav-submenu__link">
-
                         Blog
                       </NavLink>
                     </li>
@@ -177,10 +161,9 @@ const HeaderOne = () => {
                   </ul>
                 </li>
 
-
                 <li className="nav-menu__item">
                   <NavLink to="/contact" className="nav-menu__link">
-                    Contact
+                    Contactanos
                   </NavLink>
                 </li>
               </ul>
@@ -212,26 +195,8 @@ const HeaderOne = () => {
                   <span className="icon-left icon">
                     <img src="assets/images/icons/user.svg" alt="" />
                   </span>
-                  Create Account
+                  Crea una Cuenta
                 </Link>
-                {/* <div className="language-select flx-align select-has-icon">
-                  <img
-                    src="assets/images/icons/globe.svg"
-                    alt=""
-                    className="globe-icon white-version"
-                  />
-                  <img
-                    src="assets/images/icons/globe-white.svg"
-                    alt=""
-                    className="globe-icon dark-version"
-                  />
-                  <select className="select py-0 ps-2 border-0 fw-500" defaultValue={1}>
-                    <option value={1}>Eng</option>
-                    <option value={2}>Bn</option>
-                    <option value={3}>Eur</option>
-                    <option value={4}>Urd</option>
-                  </select>
-                </div> */}
               </div>
               <button
                 type="button"
@@ -248,7 +213,11 @@ const HeaderOne = () => {
       {/* ==================== Header End Here ==================== */}
 
       <div className={`mobile-menu d-lg-none d-block ${active && "active"}`}>
-        <button type="button" className="close-button text-body hover-text-main" onClick={mobileMenu}>
+        <button
+          type="button"
+          className="close-button text-body hover-text-main"
+          onClick={mobileMenu}
+        >
           <i className="las la-times" />
         </button>
         <div className="mobile-menu__inner">
@@ -275,17 +244,26 @@ const HeaderOne = () => {
                 </Link>
                 <ul className="nav-submenu">
                   <li className="nav-submenu__item">
-
-                    <NavLink to="/" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Home One
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/index-two" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/index-two"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Home Two
                     </NavLink>
                   </li>
@@ -297,9 +275,14 @@ const HeaderOne = () => {
                 </Link>
                 <ul className="nav-submenu">
                   <li className="nav-submenu__item">
-                    <NavLink to="/all-product" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/all-product"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       All Products
                     </NavLink>
                   </li>
@@ -307,7 +290,9 @@ const HeaderOne = () => {
                     <NavLink
                       to="/product-details"
                       className={(navData) =>
-                        navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
                       }
                     >
                       Product Details
@@ -321,45 +306,74 @@ const HeaderOne = () => {
                 </Link>
                 <ul className="nav-submenu">
                   <li className="nav-submenu__item">
-                    <NavLink to="/profile" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
-
+                    <NavLink
+                      to="/profile"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Profile
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/cart" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/cart"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Shopping Cart
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/cart-personal" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/cart-personal"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Mailing Address
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/cart-payment" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/cart-payment"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Payment Method
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/cart-thank-you" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/cart-thank-you"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Preview Order
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/dashboard" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/dashboard"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Dashboard
                     </NavLink>
                   </li>
@@ -371,17 +385,26 @@ const HeaderOne = () => {
                 </Link>
                 <ul className="nav-submenu">
                   <li className="nav-submenu__item">
-                    <NavLink to="/blog" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
-
+                    <NavLink
+                      to="/blog"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Blog
                     </NavLink>
                   </li>
                   <li className="nav-submenu__item">
-                    <NavLink to="/blog-details" className={(navData) =>
-                      navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
-                    } >
+                    <NavLink
+                      to="/blog-details"
+                      className={(navData) =>
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
+                      }
+                    >
                       Blog Details
                     </NavLink>
                   </li>
@@ -389,7 +412,9 @@ const HeaderOne = () => {
                     <NavLink
                       to="/blog-details-sidebar"
                       className={(navData) =>
-                        navData.isActive ? "nav-submenu__link activePage" : "nav-submenu__link"
+                        navData.isActive
+                          ? "nav-submenu__link activePage"
+                          : "nav-submenu__link"
                       }
                     >
                       Blog Details Sidebar

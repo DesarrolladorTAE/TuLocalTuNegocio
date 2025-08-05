@@ -25,7 +25,7 @@ const BannerOne = () => {
               <div className="hero-inner position-relative pe-lg-5">
                 <div>
                   <h1 className="hero-inner__title">
-                    2M+ curated digital products
+                    Los mejores Productos en un solo lugar
                   </h1>
                   <p className="hero-inner__desc font-18">
                     Explore the best premium themes and plugins available for
