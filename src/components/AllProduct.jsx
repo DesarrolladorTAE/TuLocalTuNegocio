@@ -16,10 +16,6 @@ const AllProduct = () => {
     setFilter(!filter);
   };
 
-
-
-
-
   return (
     <section className={`all-product padding-y-120 ${activeButton === "list-view" ? "list-view" : ""
       }`}>
