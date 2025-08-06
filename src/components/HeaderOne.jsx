@@ -74,7 +74,7 @@ const HeaderOne = () => {
                 </li>
                 <li className="nav-menu__item has-submenu">
                   <Link to="#" className="nav-menu__link">
-                    Productos
+                    Products
                   </Link>
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
@@ -142,6 +142,7 @@ const HeaderOne = () => {
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
                       <NavLink to="/blog" className="nav-submenu__link">
+
                         Blog
                       </NavLink>
                     </li>
@@ -160,6 +161,7 @@ const HeaderOne = () => {
                     </li>
                   </ul>
                 </li>
+
 
                 <li className="nav-menu__item">
                   <NavLink to="/contact" className="nav-menu__link">
@@ -197,6 +199,24 @@ const HeaderOne = () => {
                   </span>
                   Crea una Cuenta
                 </Link>
+                {/* <div className="language-select flx-align select-has-icon">
+                  <img
+                    src="assets/images/icons/globe.svg"
+                    alt=""
+                    className="globe-icon white-version"
+                  />
+                  <img
+                    src="assets/images/icons/globe-white.svg"
+                    alt=""
+                    className="globe-icon dark-version"
+                  />
+                  <select className="select py-0 ps-2 border-0 fw-500" defaultValue={1}>
+                    <option value={1}>Eng</option>
+                    <option value={2}>Bn</option>
+                    <option value={3}>Eur</option>
+                    <option value={4}>Urd</option>
+                  </select>
+                </div> */}
               </div>
               <button
                 type="button"
