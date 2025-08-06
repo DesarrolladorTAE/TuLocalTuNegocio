@@ -1,10 +1,8 @@
-// ✅ COMPLETO: Componente Register con validaciones, alertas SweetAlert2 y restricciones
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import ThemeToggle from "./ThemeToggle";
-import axiosClient from "../axiosClient";
+import { register } from "../service";
 import {
   alertaSuccess,
   alertaError,
@@ -71,19 +69,9 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validarFormulario()) return;
-
-    try {
-      const response = await axiosClient.post("/register", formData);
-      alertaSuccess("Cuenta creada con éxito", () => navigate("/"));
-    } catch (error) {
-      if (error.response?.status === 422) {
-        const errors = error.response.data.errors;
-        const mensaje = Object.values(errors).flat().join("\n");
-        alertaError(mensaje);
-      } else {
-        alertaError("Error inesperado. Intenta más tarde.");
-      }
-    }
+    register(formData).then((res) => console.log('res: ', res)).catch((err) => {
+      console.log('err: ', err)
+    })
   };
 
   return (
