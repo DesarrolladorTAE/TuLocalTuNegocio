@@ -1,9 +1,37 @@
 import { useEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+// 👇 desde el service que hicimos
+import {
+  isAuthenticated,
+  getUser,
+  onAuthChange,
+  logout as doLogout,
+} from "../service";
+
 const HeaderOne = () => {
   const [active, setActive] = useState(false);
   const [scroll, setScroll] = useState(false);
+  const navigate = useNavigate();
+
+  // 👇 auth state
+  const [auth, setAuth] = useState({
+    isAuth: isAuthenticated(),
+    user: getUser(),
+  });
+
+  useEffect(() => {
+    // suscríbete a cambios del service (login/logout)
+    const off = onAuthChange(({ token, user }) =>
+      setAuth({ isAuth: !!token, user })
+    );
+    return off;
+  }, []);
+
+  const handleLogout = async () => {
+    await doLogout();
+    navigate("/login", { replace: true });
+  };
 
   useEffect(() => {
     var offCanvasNav = document.getElementById("offcanvas-navigation");
@@ -142,7 +170,6 @@ const HeaderOne = () => {
                   <ul className="nav-submenu">
                     <li className="nav-submenu__item">
                       <NavLink to="/blog" className="nav-submenu__link">
-
                         Blog
                       </NavLink>
                     </li>
@@ -161,7 +188,6 @@ const HeaderOne = () => {
                     </li>
                   </ul>
                 </li>
-
 
                 <li className="nav-menu__item">
                   <NavLink to="/contact" className="nav-menu__link">
@@ -192,32 +218,57 @@ const HeaderOne = () => {
               {/* Light Dark Mode */}
               <ThemeToggle />
               {/* Light Dark Mode */}
+              {/* ...dentro de header-right__inner (versión desktop) */}
               <div className="header-right__inner gap-3 flx-align d-lg-flex d-none">
-                <Link to="/register" className="btn btn-main pill">
-                  <span className="icon-left icon">
-                    <img src="assets/images/icons/user.svg" alt="" />
-                  </span>
-                  Crea una Cuenta
-                </Link>
-                {/* <div className="language-select flx-align select-has-icon">
-                  <img
-                    src="assets/images/icons/globe.svg"
-                    alt=""
-                    className="globe-icon white-version"
-                  />
-                  <img
-                    src="assets/images/icons/globe-white.svg"
-                    alt=""
-                    className="globe-icon dark-version"
-                  />
-                  <select className="select py-0 ps-2 border-0 fw-500" defaultValue={1}>
-                    <option value={1}>Eng</option>
-                    <option value={2}>Bn</option>
-                    <option value={3}>Eur</option>
-                    <option value={4}>Urd</option>
-                  </select>
-                </div> */}
+                {!auth.isAuth ? (
+                  <Link to="/register" className="btn btn-main pill">
+                    <span className="icon-left icon">
+                      <img src="assets/images/icons/user.svg" alt="" />
+                    </span>
+                    Crea una Cuenta
+                  </Link>
+                ) : (
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-outline-light pill dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      {auth.user?.name || auth.user?.email || "Mi cuenta"}
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <Link className="dropdown-item" to="/profile">
+                          Mi Perfil
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item" to="/orders">
+                          Mis Pedidos
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item" to="/addresses">
+                          Direcciones
+                        </Link>
+                      </li>
+                      <li>
+                        <hr className="dropdown-divider" />
+                      </li>
+                      <li>
+                        <button
+                          className="dropdown-item text-danger"
+                          onClick={handleLogout}
+                        >
+                          Cerrar sesión
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
+
               <button
                 type="button"
                 className="toggle-mobileMenu d-lg-none"
@@ -455,24 +506,6 @@ const HeaderOne = () => {
                 </span>
                 Create Account
               </Link>
-              {/* <div className="language-select flx-align select-has-icon">
-                <img
-                  src="assets/images/icons/globe.svg"
-                  alt=""
-                  className="globe-icon white-version"
-                />
-                <img
-                  src="assets/images/icons/globe-white.svg"
-                  alt=""
-                  className="globe-icon dark-version"
-                />
-                <select className="select py-0 ps-2 border-0 fw-500" defaultValue={1}>
-                  <option value={1}>Eng</option>
-                  <option value={2}>Bn</option>
-                  <option value={3}>Eur</option>
-                  <option value={4}>Urd</option>
-                </select>
-              </div> */}
             </div>
           </div>
         </div>

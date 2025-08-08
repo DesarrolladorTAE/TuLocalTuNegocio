@@ -104,7 +104,7 @@ const ServiceOne = () => {
                 <img src="assets/images/icons/service-icon3.svg" alt="" />
               </span>
               <h5 className="service-item__title my-3">
-                Digital Marketing &amp; Video Editing
+                TuLocalTuNego
               </h5>
               <p className="service-item__desc">
                 We help companies communicate with customers more effectively

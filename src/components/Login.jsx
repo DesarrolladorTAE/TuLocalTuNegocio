@@ -1,16 +1,93 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import { login, loginWithGoogle } from "../service";
+import { alertaSuccess, alertaError } from "../utils/alerts";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const Login = () => {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    // remember: false,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const validar = () => {
+    if (!form.email || !form.password) {
+      alertaError("Ingresa tu correo y contraseña.");
+      return false;
+    }
+    // Validación simple de email
+    const emailOk = /\S+@\S+\.\S+/.test(form.email);
+    if (!emailOk) {
+      alertaError("Ingresa un correo válido.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validar()) return;
+
+    try {
+      setLoading(true);
+      await login({
+        email: form.email,
+        password: form.password,
+        // remember: form.remember,
+      });
+
+      alertaSuccess("¡Bienvenido! Sesión iniciada correctamente.");
+      navigate("/"); // Redirige al home o dashboard
+    } catch (err) {
+      const { response } = err || {};
+      if (!response) {
+        alertaError("No hay conexión con el servidor. Intenta de nuevo.");
+        return;
+      }
+      const { status, data } = response;
+
+      if (status === 422 && data?.errors) {
+        const first =
+          Object.values(data.errors)?.[0]?.[0] ||
+          "Datos inválidos, revisa el formulario.";
+        alertaError(first);
+        return;
+      }
+
+      if ((status === 401 || status === 403) && data?.message) {
+        alertaError(data.message);
+        return;
+      }
+
+      alertaError(data?.message || "Ocurrió un error al iniciar sesión.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
-      {/* ================================== Account Page Start =========================== */}
+      {/* ================================== Página de Cuenta (Login) =========================== */}
       <section className="account d-flex">
-        <img
-          src="assets/images/thumbs/account-img.png"
-          alt=""
-          className="account__img"
-        />
+        {/* <img src="assets/images/thumbs/account-img.png" alt="" className="account__img" /> */}
+
+        {/* Columna izquierda (imagen) */}
         <div className="account__left d-md-flex d-none flx-align section-bg position-relative z-index-1 overflow-hidden">
           <img
             src="assets/images/shapes/pattern-curve-seven.png"
@@ -18,20 +95,22 @@ const Login = () => {
             className="position-absolute end-0 top-0 z-index--1 h-100"
           />
           <div className="account-thumb">
-            <img src="assets/images/thumbs/banner-img.png" alt="" />
+            <img src="assets/images/nuevas/iniciosesion.png" alt="" />
             <div className="statistics animation bg-main text-center">
-              <h5 className="statistics__amount text-white">50k</h5>
+              <h5 className="statistics__amount text-white">+50 mil</h5>
               <span className="statistics__text text-white font-14">
-                Customers
+                Clientes
               </span>
             </div>
           </div>
         </div>
+
+        {/* Columna derecha (formulario) */}
         <div className="account__right padding-y-120 flx-align">
           <div className="dark-light-mode">
-            {/* Light Dark Mode */}
             <ThemeToggle />
           </div>
+
           <div className="account-content">
             <Link to="/" className="logo mb-64">
               <img
@@ -45,105 +124,119 @@ const Login = () => {
                 className="dark-version"
               />
             </Link>
+
             <h4 className="account-content__title mb-48 text-capitalize">
-              Welcome Back!
+              ¡Bienvenido de nuevo!
             </h4>
-            <form action="#">
+
+            <form onSubmit={handleSubmit}>
               <div className="row gy-4">
+                {/* Botón Google primero */}
+                <div className="col-12">
+                  <button
+                    type="button"
+                    className="btn btn-outline-light btn-lg-icon btn-lg w-100 pill d-flex align-items-center justify-content-center"
+                    onClick={loginWithGoogle}
+                    disabled={loading}
+                  >
+                    <span className="icon icon-left">
+                      <img src="assets/images/icons/google.svg" alt="Google" />
+                    </span>
+                    Iniciar sesión con Google
+                  </button>
+                </div>
+
+                <div className="col-12 text-center">
+                  <span className="font-14 text-body">
+                    o ingresa con tu correo
+                  </span>
+                </div>
+
                 <div className="col-12">
                   <label
                     htmlFor="email"
                     className="form-label mb-2 font-18 font-heading fw-600"
                   >
-                    Email
+                    Correo electrónico
                   </label>
                   <div className="position-relative">
                     <input
                       type="email"
                       className="common-input common-input--bg common-input--withIcon"
                       id="email"
-                      placeholder="infoname@mail.com"
+                      name="email"
+                      placeholder="correo@ejemplo.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      disabled={loading}
                     />
                     <span className="input-icon">
                       <img src="assets/images/icons/envelope-icon.svg" alt="" />
                     </span>
                   </div>
                 </div>
+
                 <div className="col-12">
                   <label
-                    htmlFor="your-password"
+                    htmlFor="password"
                     className="form-label mb-2 font-18 font-heading fw-600"
                   >
-                    Password
+                    Contraseña
                   </label>
                   <div className="position-relative">
                     <input
-                      type="password"
+                      type={showPass ? "text" : "password"}
                       className="common-input common-input--bg common-input--withIcon"
-                      id="your-password"
-                      placeholder="6+ characters, 1 Capital letter"
+                      id="password"
+                      name="password"
+                      placeholder="Ingresa tu contraseña"
+                      value={form.password}
+                      onChange={handleChange}
+                      disabled={loading}
                     />
                     <span
                       className="input-icon toggle-password cursor-pointer"
-                      id="#your-password"
+                      onClick={() => !loading && setShowPass((prev) => !prev)}
+                      style={{
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
                     >
-                      <img src="assets/images/icons/lock-icon.svg" alt="" />
+                      {showPass ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </span>
                   </div>
                 </div>
+
+                
+
                 <div className="col-12">
-                  <div className="flx-between gap-1">
-                    <div className="common-check my-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        name="checkbox"
-                        id="keepMe"
+                  <button
+                    type="submit"
+                    className="btn btn-main btn-lg w-100 pill d-flex align-items-center justify-content-center"
+                    disabled={loading}
+                    style={{ gap: 8 }}
+                  >
+                    {loading && (
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        role="status"
+                        aria-hidden="true"
                       />
-                      <label
-                        className="form-check-label mb-0 fw-400 font-14 text-body"
-                        htmlFor="keepMe"
-                      >
-                        Keep me signed in
-                      </label>
-                    </div>
-                    <Link
-                      to="#"
-                      className="forgot-password text-decoration-underline text-main text-poppins font-14"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                </div>
-                <div className="col-12">
-                  <button
-                    type="submit"
-                    className="btn btn-main btn-lg w-100 pill"
-                  >
-                    {" "}
-                    Sign In
+                    )}
+                    {loading ? "Iniciando sesión…" : "Iniciar sesión"}
                   </button>
                 </div>
-                <div className="col-12">
-                  <button
-                    type="submit"
-                    className="btn btn-outline-light btn-lg-icon btn-lg w-100 pill"
-                  >
-                    <span className="icon icon-left">
-                      <img src="assets/images/icons/google.svg" alt="" />
-                    </span>
-                    Sign in with google
-                  </button>
-                </div>
+
                 <div className="col-sm-12 mb-0">
-                  <div className="have-account">
+                  <div className="have-account text-center">
                     <p className="text font-14">
-                      New to the market?{" "}
+                      ¿Aún no tienes cuenta?{" "}
                       <Link
                         className="link text-main text-decoration-underline fw-500"
                         to="/register"
                       >
-                        sign up
+                        Regístrate
                       </Link>
                     </p>
                   </div>
@@ -153,7 +246,7 @@ const Login = () => {
           </div>
         </div>
       </section>
-      {/* ================================== Account Page End =========================== */}
+      {/* ================================== Fin Login =========================== */}
     </>
   );
 };
