@@ -21,18 +21,17 @@ const Breadcrumb = () => {
           <div className="col-lg-7">
             <div className="breadcrumb-one-content">
               <h3 className="breadcrumb-one-content__title text-center mb-3 text-capitalize">
-                58,000+ products available for purchase
+                Los Mejores Productos en un solo Lugar
               </h3>
               <p className="breadcrumb-one-content__desc text-center text-black-three">
-                Explore the best premium themes and plugins available for sale.
-                Our unique collection is hand-curated by experts. Find and buy
-                the perfect premium theme.
+                Explora en las diversas categorias que tenemos para ti, elige en la amplia variedad de Productos que tenemos para ofrecerte.
+                Conoce, Compra y Disfruta.
               </p>
               <form action="#" className="search-box">
                 <input
                   type="text"
                   className="common-input common-input--lg pill shadow-sm"
-                  placeholder="Search theme, plugins & more..."
+                  placeholder="Buscar productos...."
                 />
                 <button
                   type="submit"

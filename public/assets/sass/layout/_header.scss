@@ -350,3 +350,208 @@
 /* Submenu End */
 /* Header Menu and Submenu Css End */
 /* ================================= Header Css End =========================== */
+
+
+//Cambios para categorias
+/* ===== Mega panel de categorías (3 filas x 10 columnas) ===== */
+/* ===== Mega panel de categorías (responsive y accesible) ===== */
+:root {
+  --mega-col-min: 150px;    /* ancho mínimo de cada columna en desktop amplio */
+  --mega-gap-x: 16px;       /* separación horizontal entre columnas */
+  --mega-gap-y: 8px;        /* separación vertical entre filas */
+  --mega-pad-x: 20px;       /* padding lateral del panel */
+  --mega-maxvw: 96vw;       /* tope relativo al viewport */
+}
+
+.has-mega-cats { position: relative; }
+
+/* Panel centrado bajo el menú */
+.mega-cats-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 12px);
+
+  /* Calcula ancho para 10 cols + 9 gaps + paddings; con límites fluidos */
+  width: clamp(
+    1100px,
+    calc(10 * var(--mega-col-min) + 9 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
+    var(--mega-maxvw)
+  );
+
+  padding: 16px var(--mega-pad-x) 14px;
+  background: hsl(var(--white));
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.12);
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .18s ease, transform .18s ease;
+
+  /* línea superior de acento */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    background: var(--main-gradient);
+  }
+}
+
+/* Mostrar al hover/focus-within (mejora accesibilidad con teclado) */
+.has-mega-cats:hover .mega-cats-panel,
+.has-mega-cats:focus-within .mega-cats-panel {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Encabezado */
+.mega-cats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px 12px;
+  border-bottom: 1px dashed hsl(var(--border-color));
+  margin-bottom: 12px;
+
+  .title {
+    font-weight: 700;
+    letter-spacing: .2px;
+    @include font-16;
+    color: hsl(var(--heading-color));
+  }
+  .view-all {
+    @include font-14;
+    color: hsl(var(--main));
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* Grid base 3x10 (10 columnas) con filas auto según contenido */
+.mega-cats-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(10, minmax(var(--mega-col-min), 1fr));
+  grid-auto-rows: auto;
+  align-items: start;
+  row-gap: var(--mega-gap-y);
+  column-gap: var(--mega-gap-x);
+
+  /* Separadores laterales sutiles */
+  box-shadow:
+    inset 1px 0 0 hsl(var(--border-color)/.5),
+    inset -1px 0 0 hsl(var(--border-color)/.5);
+  border-radius: 10px;
+  padding: 2px 0;
+}
+
+/* Item y link */
+.mega-cats-item {
+  position: relative;
+  background: transparent;
+  border-radius: 8px;
+  min-height: 0;
+
+  &:hover { background: hsl(var(--gray-200)); }
+}
+
+.mega-cats-link {
+  position: relative;
+  display: block;
+  padding: 8px 10px 8px 22px;  /* espacio para bullet */
+  border-radius: inherit;
+  color: hsl(var(--heading-color));
+  font-weight: 500;
+  @include font-15;
+  line-height: 1.28;
+
+  /* textos largos completos */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+  hyphens: auto;
+
+  &:hover { color: hsl(var(--main)); }
+
+  /* bullet alineado a primera línea */
+  &::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 0.95em;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: hsl(var(--heading-color)/.35);
+  }
+}
+
+/* ===== Breakpoints fluidos ===== */
+/* <= 1600px: 9 columnas */
+@media (max-width: 1600px) {
+  .mega-cats-panel {
+    width: clamp(
+      1000px,
+      calc(9 * var(--mega-col-min) + 8 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
+      var(--mega-maxvw)
+    );
+  }
+  .mega-cats-grid { grid-template-columns: repeat(9, minmax(var(--mega-col-min), 1fr)); }
+}
+
+/* <= 1400px: 8 columnas */
+@media (max-width: 1400px) {
+  .mega-cats-panel {
+    width: clamp(
+      920px,
+      calc(8 * var(--mega-col-min) + 7 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
+      var(--mega-maxvw)
+    );
+  }
+  .mega-cats-grid { grid-template-columns: repeat(8, minmax(var(--mega-col-min), 1fr)); }
+}
+
+/* <= 1200px: 6 columnas */
+@media (max-width: 1200px) {
+  .mega-cats-panel {
+    width: clamp(
+      760px,
+      calc(6 * var(--mega-col-min) + 5 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
+      var(--mega-maxvw)
+    );
+  }
+  .mega-cats-grid { grid-template-columns: repeat(6, minmax(var(--mega-col-min), 1fr)); }
+}
+
+/* <= 992px: integra en offcanvas y 2 columnas */
+@media (max-width: 992px) {
+  .mega-cats-panel {
+    position: static;
+    transform: none;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .mega-cats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Asegura visibilidad dentro del offcanvas */
+  .nav-menu--mobile .has-mega-cats .mega-cats-panel {
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: 0 !important;
+  }
+  .mega-cats-link { @include font-14; }
+}
+
+/* <= 576px: 1 columna (si quieres mantener 2, quita este bloque) */
+@media (max-width: 576px) {
+  .mega-cats-grid { grid-template-columns: 1fr; }
+}

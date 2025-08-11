@@ -157,3 +157,9 @@ export async function createProduct(data, onProgress) {
 
   return res.data; // { message, product, ... }
 }
+
+//Categorias
+export async function fetchCategorias() {
+  const { data } = await axiosClient.get("categorias"); // baseURL ya está en axiosClient
+  return data; // array de categorías
+}

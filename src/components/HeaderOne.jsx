@@ -7,12 +7,31 @@ import {
   getUser,
   onAuthChange,
   logout as doLogout,
+  fetchCategorias
 } from "../service";
 
 const HeaderOne = () => {
   const [active, setActive] = useState(false);
   const [scroll, setScroll] = useState(false);
+  const [categorias, setCategorias] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchCategorias();
+        // Tomar solo las primeras 30
+        setCategorias(data.slice(0, 30));
+      } catch (e) {
+        console.error("Error cargando categorías:", e);
+      }
+    })();
+  }, []);
+
+  const categoriasEnFilas = [];
+  for (let i = 0; i < categorias.length; i += 10) {
+    categoriasEnFilas.push(categorias.slice(i, i + 10));
+  }
 
   // 👇 auth state
   const [auth, setAuth] = useState({
@@ -100,69 +119,34 @@ const HeaderOne = () => {
                     Inicio
                   </NavLink>
                 </li>
-                <li className="nav-menu__item has-submenu">
-                  <Link to="#" className="nav-menu__link">
-                    Products
-                  </Link>
-                  <ul className="nav-submenu">
-                    <li className="nav-submenu__item">
-                      <NavLink to="/all-product" className="nav-submenu__link">
-                        All Products
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink
-                        to="/product-details"
-                        className="nav-submenu__link"
-                      >
-                        Product Details
-                      </NavLink>
-                    </li>
-                  </ul>
+                <li className="nav-menu__item">
+                  <NavLink to="/all-product" className="nav-menu__link">
+                    Productos
+                  </NavLink>
                 </li>
-                <li className="nav-menu__item has-submenu">
-                  <Link to="#" className="nav-menu__link">
-                    Categorias
-                  </Link>
-                  <ul className="nav-submenu">
-                    <li className="nav-submenu__item">
-                      <NavLink to="/profile" className="nav-submenu__link">
-                        Profile
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink to="/cart" className="nav-submenu__link">
-                        Shopping Cart
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink
-                        to="/cart-personal"
-                        className="nav-submenu__link"
-                      >
-                        Mailing Address
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink to="/cart-payment" className="nav-submenu__link">
-                        Payment Method
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink
-                        to="/cart-thank-you"
-                        className="nav-submenu__link"
-                      >
-                        Preview Order
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink to="/dashboard" className="nav-submenu__link">
-                        Dashboard
-                      </NavLink>
-                    </li>
-                  </ul>
+                <li className="nav-menu__item has-mega-cats">
+                  <span className="nav-menu__link">Categorías</span>
+
+                  <div className="mega-cats-panel">
+                    <div className="mega-cats-head">
+                      <span className="title">Explora categorías</span>
+                      <a href="/all-product" className="view-all">Ver todas</a>
+                    </div>
+
+                    {/* 3 filas x 10 columnas: simplemente renderiza los 30 items */}
+                    <ul className="mega-cats-grid">
+                      {categorias.slice(0, 30).map(cat => (
+                        <li key={cat.id} className="mega-cats-item">
+                          <a href={`/products/${cat.slug}`} className="mega-cats-link">
+                            {cat.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </li>
+
+
                 <li className="nav-menu__item has-submenu">
                   <Link to="#" className="nav-menu__link">
                     Tiendas
@@ -309,147 +293,33 @@ const HeaderOne = () => {
               className="nav-menu flx-align nav-menu--mobile"
               id="offcanvas-navigation"
             >
-              <li className="nav-menu__item has-submenu ">
-                <Link to="#" className="nav-menu__link">
-                  Home
-                </Link>
-                <ul className="nav-submenu">
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Home One
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/index-two"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Home Two
-                    </NavLink>
-                  </li>
-                </ul>
+              <li className="nav-menu__item">
+                <NavLink to="/" className="nav-menu__link">
+                  Inicio
+                </NavLink>
+              </li>
+              <li className="nav-menu__item">
+                <NavLink to="/all-product" className="nav-menu__link">
+                  Productos
+                </NavLink>
               </li>
               <li className="nav-menu__item has-submenu">
-                <Link to="#" className="nav-menu__link">
-                  Products
-                </Link>
-                <ul className="nav-submenu">
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/all-product"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      All Products
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/product-details"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Product Details
-                    </NavLink>
-                  </li>
-                </ul>
+                <span className="nav-menu__link">Categorías</span>
+                <div className="nav-submenu mega-menu">
+                  {categoriasEnFilas.map((fila, idx) => (
+                    <ul key={idx} className="nav-submenu__col">
+                      {fila.map((cat) => (
+                        <li key={cat.id} className="nav-submenu__item">
+                          <a href={`/all-product/${cat.slug}`} className="nav-submenu__link">
+                            {cat.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
+                </div>
               </li>
-              <li className="nav-menu__item has-submenu">
-                <Link to="#" className="nav-menu__link">
-                  Pages
-                </Link>
-                <ul className="nav-submenu">
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/profile"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Profile
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/cart"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Shopping Cart
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/cart-personal"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Mailing Address
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/cart-payment"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Payment Method
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/cart-thank-you"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Preview Order
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/dashboard"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Dashboard
-                    </NavLink>
-                  </li>
-                </ul>
-              </li>
+
               <li className="nav-menu__item has-submenu">
                 <Link to="#" className="nav-menu__link">
                   Blog
@@ -500,13 +370,44 @@ const HeaderOne = () => {
               </li>
             </ul>
             <div className="header-right__inner d-lg-none my-3 gap-1 d-flex flx-align">
-              <Link to="/register" className="btn btn-main pill">
-                <span className="icon-left icon">
-                  <img src="assets/images/icons/user.svg" alt="" />
-                </span>
-                Create Account
-              </Link>
+              {!auth.isAuth ? (
+                <Link to="/register" className="btn btn-main pill w-100">
+                  <span className="icon-left icon">
+                    <img src="assets/images/icons/user.svg" alt="" />
+                  </span>
+                  Crea una Cuenta
+                </Link>
+              ) : (
+                <div className="dropdown w-100">
+                  <button
+                    className="btn btn-outline-light pill dropdown-toggle w-100 text-start"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    {auth.user?.name || auth.user?.email || "Mi cuenta"}
+                  </button>
+                  <ul className="dropdown-menu w-100">
+                    <li>
+                      <Link className="dropdown-item" to="/profile">Mi Perfil</Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item" to="/orders">Mis Pedidos</Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item" to="/addresses">Direcciones</Link>
+                    </li>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li>
+                      <button className="dropdown-item text-danger" onClick={handleLogout}>
+                        Cerrar sesión
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
+
           </div>
         </div>
       </div>

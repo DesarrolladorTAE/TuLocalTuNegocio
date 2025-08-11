@@ -1,17 +1,101 @@
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { fetchCategorias } from "../service";
 
 const AllProduct = () => {
   const [activeButton, setActiveButton] = useState("grid-view");
-  const [filter, setFilter] = useState(false)
+  const [filter, setFilter] = useState(false);
+  const [categorias, setCategorias] = useState([]);
+  const [categoriasAll, setCategoriasAll] = useState([]);
 
   const handleClick = (buttonName) => {
     setActiveButton(buttonName);
   };
 
+  useEffect(() => {
+    let cancelled = false;
 
+    // util: baraja y toma N
+    const pickRandom = (arr, n) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a.slice(0, n);
+    };
+
+    (async () => {
+      try {
+        const res = await fetchCategorias(); // tu service
+
+        // según cómo devuelve tu service, normaliza:
+        const list = Array.isArray(res) ? res : res?.data;
+
+        if (Array.isArray(list) && !cancelled) {
+          setCategorias(pickRandom(list, 5));
+        }
+      } catch (e) {
+        console.error("Error cargando categorías:", e);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetchCategorias();
+        const list = Array.isArray(res) ? res : res?.data;
+        if (Array.isArray(list) && !cancelled) {
+          setCategoriasAll(list);
+        }
+      } catch (e) {
+        console.error("Error cargando TODAS las categorías:", e);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+
+  <div className="filter-sidebar__item">
+    <button
+      type="button"
+      className="filter-sidebar__button font-16 text-capitalize fw-500"
+    >
+      Category
+    </button>
+    <div className="filter-sidebar__content">
+      <ul className="filter-sidebar-list">
+        <li className="filter-sidebar-list__item">
+          <Link to="/" className="filter-sidebar-list__text">
+            All Categories
+            <span className="qty">{categorias.length}</span>
+          </Link>
+        </li>
+
+        {categorias.map((cat) => (
+          <li key={cat.id} className="filter-sidebar-list__item">
+            <Link
+              to={`/categoria/${cat.slug || cat.id}`}
+              className="filter-sidebar-list__text"
+            >
+              {cat.name}
+              {cat.product_count !== undefined && (
+                <span className="qty">{cat.product_count}</span>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
   const handleFilter = () => {
     setFilter(!filter);
   };
@@ -30,97 +114,44 @@ const AllProduct = () => {
                 <span className="icon icon-left">
                   <img src="assets/images/icons/filter.svg" alt="" />
                 </span>
-                <span className="font-18 fw-500">Filters</span>
+                <span className="font-18 fw-500">Filtros</span>
               </button>
               <ul
                 className="nav common-tab nav-pills mb-0 gap-lg-2 gap-1 ms-lg-auto"
                 id="pills-tab"
                 role="tablist"
               >
+                {/* Botón fijo "Todas" */}
                 <li className="nav-item" role="presentation">
                   <button
                     className="nav-link active"
-                    id="pills-product-tab"
+                    id="pills-todas-tab"
                     data-bs-toggle="pill"
-                    data-bs-target="#pills-product"
+                    data-bs-target="#pills-todas"
                     type="button"
                     role="tab"
-                    aria-controls="pills-product"
                     aria-selected="true"
                   >
-                    All Item
+                    Todas
                   </button>
                 </li>
-                <li className="nav-item" role="presentation">
-                  <button
-                    className="nav-link"
-                    id="pills-bestMatch-tab"
-                    data-bs-toggle="pill"
-                    data-bs-target="#pills-bestMatch"
-                    type="button"
-                    role="tab"
-                    aria-controls="pills-bestMatch"
-                    aria-selected="false"
-                  >
-                    Best Match
-                  </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <button
-                    className="nav-link"
-                    id="pills-bestRating-tab"
-                    data-bs-toggle="pill"
-                    data-bs-target="#pills-bestRating"
-                    type="button"
-                    role="tab"
-                    aria-controls="pills-bestRating"
-                    aria-selected="false"
-                  >
-                    Best Rating
-                  </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <button
-                    className="nav-link"
-                    id="pills-trending-tab"
-                    data-bs-toggle="pill"
-                    data-bs-target="#pills-trending"
-                    type="button"
-                    role="tab"
-                    aria-controls="pills-trending"
-                    aria-selected="false"
-                  >
-                    Site Template
-                  </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <button
-                    className="nav-link"
-                    id="pills-bestOffers-tab"
-                    data-bs-toggle="pill"
-                    data-bs-target="#pills-bestOffers"
-                    type="button"
-                    role="tab"
-                    aria-controls="pills-bestOffers"
-                    aria-selected="false"
-                  >
-                    Best Offers
-                  </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <button
-                    className="nav-link"
-                    id="pills-bestSelling-tab"
-                    data-bs-toggle="pill"
-                    data-bs-target="#pills-bestSelling"
-                    type="button"
-                    role="tab"
-                    aria-controls="pills-bestSelling"
-                    aria-selected="false"
-                  >
-                    Best Selling
-                  </button>
-                </li>
+
+                {/* Categorías aleatorias */}
+                {categorias.map(cat => (
+                  <li className="nav-item" role="presentation" key={cat.id}>
+                    <button
+                      className="nav-link"
+                      id={`pills-${cat.id}-tab`}
+                      data-bs-toggle="pill"
+                      data-bs-target={`#pills-${cat.id}`}
+                      type="button"
+                      role="tab"
+                      aria-selected="false"
+                    >
+                      {cat.name}
+                    </button>
+                  </li>
+                ))}
               </ul>
               <div className="list-grid d-flex align-items-center gap-2">
                 <button
@@ -217,288 +248,30 @@ const AllProduct = () => {
                   type="button"
                   className="filter-sidebar__button font-16 text-capitalize fw-500"
                 >
-                  Category
+                  Categorias
                 </button>
+
                 <div className="filter-sidebar__content">
                   <ul className="filter-sidebar-list">
                     <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        All Categories <span className="qty">25489</span>
+                      <Link  className="filter-sidebar-list__text">
+                        Todas las Categorias <span className="qty">{categoriasAll.length}</span>
                       </Link>
                     </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Site Template <span className="qty">12,501</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        WordPress <span className="qty">1258</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        UI Template <span className="qty">1520</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Templates Kits <span className="qty">210</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        eCommerce <span className="qty">158</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Marketing <span className="qty">178</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        CMS Template <span className="qty">122</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Muse Themes <span className="qty">450</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Blogging <span className="qty">155</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Courses <span className="qty">125</span>
-                      </Link>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <Link to="/" className="filter-sidebar-list__text">
-                        Forums <span className="qty">35</span>
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div className="filter-sidebar__item">
-                <button
-                  type="button"
-                  className="filter-sidebar__button font-16 text-capitalize fw-500"
-                >
-                  Rating
-                </button>
-                <div className="filter-sidebar__content">
-                  <ul className="filter-sidebar-list">
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="veiwAll"
-                          />
-                          <label className="form-check-label" htmlFor="veiwAll">
-                            View All
-                          </label>
-                        </div>
-                        <span className="qty">(1859)</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="oneStar"
-                          />
-                          <label className="form-check-label" htmlFor="oneStar">
-                            1 Star and above
-                          </label>
-                        </div>
-                        <span className="qty">(785)</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="twoStar"
-                          />
-                          <label className="form-check-label" htmlFor="twoStar">
-                            2 Star and above
-                          </label>
-                        </div>
-                        <span className="qty">(1250)</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="threeStar"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="threeStar"
-                          >
-                            3 Star and above
-                          </label>
-                        </div>
-                        <span className="qty">(7580)</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="fourStar"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="fourStar"
-                          >
-                            4 Star and above
-                          </label>
-                        </div>
-                        <span className="qty">(1450)</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="fiveStar"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="fiveStar"
-                          >
-                            5 Star Rating
-                          </label>
-                        </div>
-                        <span className="qty">(2530)</span>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div className="filter-sidebar__item">
-                <button
-                  type="button"
-                  className="filter-sidebar__button font-16 text-capitalize fw-500"
-                >
-                  Date Updated
-                </button>
-                <div className="filter-sidebar__content">
-                  <ul className="filter-sidebar-list">
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="anyDate"
-                          />
-                          <label className="form-check-label" htmlFor="anyDate">
-                            Any Date
-                          </label>
-                        </div>
-                        <span className="qty"> 5,203</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="lastYear"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="lastYear"
-                          >
-                            In the last year
-                          </label>
-                        </div>
-                        <span className="qty">1,258</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="lastMonth"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="lastMonth"
-                          >
-                            In the last month
-                          </label>
-                        </div>
-                        <span className="qty">2450</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="LastWeek"
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="LastWeek"
-                          >
-                            In the last week
-                          </label>
-                        </div>
-                        <span className="qty">325</span>
-                      </div>
-                    </li>
-                    <li className="filter-sidebar-list__item">
-                      <div className="filter-sidebar-list__text">
-                        <div className="common-check common-radio">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="radio"
-                            id="lastDay"
-                          />
-                          <label className="form-check-label" htmlFor="lastDay">
-                            In the last day
-                          </label>
-                        </div>
-                        <span className="qty">745</span>
-                      </div>
-                    </li>
+
+                    {categoriasAll.map(cat => (
+                      <li key={cat.id} className="filter-sidebar-list__item">
+                        <Link
+                          to={`/categoria/${cat.slug || cat.id}`}
+                          className="filter-sidebar-list__text"
+                        >
+                          {cat.name}
+                          {cat.product_count != null && (
+                            <span className="qty">{cat.product_count}</span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
