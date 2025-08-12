@@ -113,8 +113,15 @@ export function handleOAuthCallbackFromURL() {
 
 export async function logout() {
   try {
-    await axiosClient.post("logout");
-  } catch {}
+    const res = await axiosClient.post("logout", null, {
+      headers: {
+        Authorization: `Bearer ${authState.token}`,
+      },
+    });
+  } catch (err) {
+    console.error("Logout error:", err);
+    throw err
+  }
   clearAuth();
 }
 
@@ -164,6 +171,7 @@ export async function fetchCategorias() {
   return data; // array de categorías
 }
 
+
 //Todos Los Productos
 export async function indexProductos() {
   try {
@@ -182,4 +190,153 @@ export async function productsByCategory(categoryId) {
   if (!categoryId && categoryId !== 0) throw new Error("categoryId requerido");
   const { data } = await axiosClient.post("/categorias/productos", { id: Number(categoryId) });
   return Array.isArray(data) ? data : [];
+}
+
+// consultas admin
+export async function adminKPI(fechaInicio, fechaFin) {
+  // Usa el token del authState, como en el resto del módulo
+  const token = getToken();
+
+  // Normaliza fechas a YYYY-MM-DD si vienen como Date
+  const toISO = (d) => {
+    if (!d) return null;
+    if (typeof d === "string") return d;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const from = toISO(fechaInicio);
+  const to = toISO(fechaFin);
+
+  // Helper para GET con query
+  const q = (params) => new URLSearchParams(params).toString();
+
+  // Endpoints (todos GET)
+  const endpoints = {
+    overview: `admin/overview?${q({ from, to })}`,
+    ordersSummary: `admin/orders/summary?${q({ from, to })}`,
+    productsSummary: `admin/products/summary?${q({ from, to })}`,
+    usersSummary: `admin/users/summary?${q({ from, to })}`,
+    donationsSummary: `admin/donations/summary?${q({ from, to })}`,
+    categoriesSummary: `admin/categories/summary?${q({ from, to })}`,
+    vendorsBoard: `admin/vendors/leaderboard?${q({ from, to })}`,
+    clientsBoard: `admin/clients/leaderboard?${q({ from, to })}`,
+    inventoryAlerts: `admin/inventory/alerts?threshold=5`,
+    systemHealth: `admin/system/health`,
+  };
+
+  try {
+    // Usa axiosClient para todas las llamadas
+    const [
+      overviewRes,
+      ordersRes,
+      productsRes,
+      usersRes,
+      donationsRes,
+      categoriesRes,
+      vendorsRes,
+      clientsRes,
+      inventoryRes,
+      healthRes
+    ] = await Promise.all(
+      Object.values(endpoints).map((url) =>
+        axiosClient.get(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).then(r => r.data)
+      )
+    );
+
+    // Tarjetas (hero KPIs)
+    const kpis = {
+      productosActivos: productsRes?.catalog?.active ?? 0,
+      ventasTotales: ordersRes?.totals?.sales_paid ?? overviewRes?.orders?.sales_total ?? 0,
+      ordenes: ordersRes?.totals?.orders_paid ?? overviewRes?.orders?.count ?? 0,
+      clientesActivos: usersRes?.active_clients ?? 0,
+      repeatRate: usersRes?.repeat_rate_pct ?? 0,
+      donaciones: donationsRes?.totals?.amount ?? overviewRes?.donations?.amount_total ?? 0,
+    };
+
+    // Gráfica historial de ventas (línea/área)
+    const salesHistory = (ordersRes?.series?.by_day || []).map(d => ({
+      date: d.day,
+      orders: Number(d.orders || 0),
+      sales: Number(d.sales || 0),
+    }));
+
+    // Pie: ventas por categoría
+    const salesByCategory = (categoriesRes?.categories || []).map(c => ({
+      category_id: c.category_id,
+      category: c.category,
+      amount: Number(c.amount || 0),
+      units: Number(c.units || 0),
+    }));
+
+    // Tablas
+    const topVendors = (vendorsRes?.leaderboard || []).map(v => ({
+      vendedor_id: v.vendedor_id,
+      vendedor: v.vendedor?.name || `#${v.vendedor_id}`,
+      email: v.vendedor?.email || "",
+      orders: Number(v.orders || 0),
+      sales: Number(v.sales || 0),
+      avg_ticket: Number(
+        (vendorsRes?.avg_ticket || []).find(a => a.vendedor_id === v.vendedor_id)?.avg_ticket || 0
+      ),
+    }));
+
+    const topClients = (clientsRes?.top_clients || []).map(c => ({
+      cliente_id: c.cliente_id,
+      cliente: c.cliente?.name || `#${c.cliente_id}`,
+      email: c.cliente?.email || "",
+      orders: Number(c.orders || 0),
+      spent: Number(c.spent || 0),
+    }));
+
+    const lowStock = (inventoryRes?.low_stock_by_location || []).map(i => ({
+      product_id: i.product_id,
+      product: i.product,
+      address_id: i.address_id,
+      city: i.city,
+      state: i.state,
+      stock: Number(i.stock || 0),
+      is_active: !!i.is_active,
+    }));
+
+    // Extra útil para badges/estados
+    const system = {
+      apiStatus: healthRes?.status?.api ?? "unknown",
+      time: healthRes?.app?.time ?? null,
+    };
+
+    // Regresa todo listo para pintar “al instante”
+    return {
+      ok: true,
+      range: { from, to },
+      kpis,
+      charts: {
+        salesHistory,
+        salesByCategory,
+      },
+      tables: {
+        topVendors,
+        topClients,
+        lowStock,
+      },
+      raw: {
+        overviewRes,
+        ordersRes,
+        productsRes,
+        usersRes,
+        donationsRes,
+        categoriesRes,
+        vendorsRes,
+        clientsRes,
+        inventoryRes,
+        healthRes,
+      },
+      system,
+    };
+  } catch (error) {
+    console.error("adminKPI error:", error);
+    return { ok: false, error: error?.message || "Error al cargar KPIs" };
+  }
 }

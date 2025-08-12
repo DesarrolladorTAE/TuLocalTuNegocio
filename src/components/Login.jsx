@@ -46,14 +46,18 @@ const Login = () => {
 
     try {
       setLoading(true);
-      await login({
+      let response = await login({
         email: form.email,
         password: form.password,
         // remember: form.remember,
       });
 
-      alertaSuccess("¡Bienvenido! Sesión iniciada correctamente.");
-      navigate("/"); // Redirige al home o dashboard
+      if (response.user.role == 3) {
+        navigate("/dashboard"); 
+      } else {
+        navigate("/"); 
+      }
+
     } catch (err) {
       const { response } = err || {};
       if (!response) {
@@ -208,7 +212,7 @@ const Login = () => {
                   </div>
                 </div>
 
-                
+
 
                 <div className="col-12">
                   <button
