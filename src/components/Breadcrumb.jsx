@@ -27,19 +27,6 @@ const Breadcrumb = () => {
                 Explora en las diversas categorias que tenemos para ti, elige en la amplia variedad de Productos que tenemos para ofrecerte.
                 Conoce, Compra y Disfruta.
               </p>
-              <form action="#" className="search-box">
-                <input
-                  type="text"
-                  className="common-input common-input--lg pill shadow-sm"
-                  placeholder="Buscar productos...."
-                />
-                <button
-                  type="submit"
-                  className="btn btn-main btn-icon icon border-0"
-                >
-                  <img src="assets/images/icons/search.svg" alt="" />
-                </button>
-              </form>
             </div>
           </div>
         </div>

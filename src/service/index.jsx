@@ -163,3 +163,23 @@ export async function fetchCategorias() {
   const { data } = await axiosClient.get("categorias"); // baseURL ya está en axiosClient
   return data; // array de categorías
 }
+
+//Todos Los Productos
+export async function indexProductos() {
+  try {
+    const { data } = await axiosClient.get("productos"); // => {{tltn}}/api/productos si tu baseURL ya es {{tltn}}/api
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    // Log opcional para diagnóstico
+    console.error("Error al cargar productos:", err?.response?.data || err.message);
+    // Propaga un error legible para el front
+    throw new Error("No se pudieron cargar los productos. Intenta de nuevo.");
+  }
+}
+
+//Filtro de Productos por Categorias
+export async function productsByCategory(categoryId) {
+  if (!categoryId && categoryId !== 0) throw new Error("categoryId requerido");
+  const { data } = await axiosClient.post("/categorias/productos", { id: Number(categoryId) });
+  return Array.isArray(data) ? data : [];
+}
