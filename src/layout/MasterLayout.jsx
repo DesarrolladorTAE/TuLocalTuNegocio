@@ -7,7 +7,6 @@ import ThemeToggle from "../components/ThemeToggle";
 import { logout } from "../service";
 
 const MasterLayout = ({ children }) => {
-
     let [active, setActive] = useState(false)
     let [show, setShow] = useState(false)
     let dashboardControl = () => {
@@ -17,7 +16,7 @@ const MasterLayout = ({ children }) => {
         setShow(!show)
     }
 
-
+    const user = JSON.parse(localStorage.getItem('user'))
 
     return (
         <>
@@ -472,8 +471,11 @@ const MasterLayout = ({ children }) => {
                                             <button className="user-profile__button flex-align" onClick={showProfileControl}>
                                                 <span className="user-profile__thumb">
                                                     <img
-                                                        src="assets/images/thumbs/user-profile.png"
+                                                        src={user.avatar_url}
                                                         className="cover-img"
+                                                        onError={(e) => {
+                                                            e.target.src = 'https://taeconta.com/api/public/api/imagenPlantilla/20250812_141403.jpg';
+                                                        }}
                                                         alt=""
                                                     />
                                                 </span>

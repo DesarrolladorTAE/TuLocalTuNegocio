@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
-import { adminKPI, adminDetail } from "../service/index";
+import { adminKPI, adminDetail } from "../service/indexAdmin";
 
 const currency = (n) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }).format(Number(n || 0));
@@ -8,6 +8,7 @@ const num = (n) => new Intl.NumberFormat("es-MX").format(Number(n || 0));
 
 const DashboardInner = () => {
   const today = new Date();
+  today.setDate(today.getDate() + 1);
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const [selectedTopic, setSelectedTopic] = useState(null); // "ventas" | "ordenes" | "donaciones" | "usuarios" | "inventario" | ...
   const [detailLoading, setDetailLoading] = useState(false);

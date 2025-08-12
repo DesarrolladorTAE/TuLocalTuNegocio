@@ -4,10 +4,11 @@ import MasterLayout from "../layout/MasterLayout";
 import DashboardInner from "../components/DashboardInner";
 const DashboardPage = () => {
 
+  
   return (
 
     <>
-      <MasterLayout>
+      <MasterLayout >
         {/* Preloader */}
         <Preloader />
 
