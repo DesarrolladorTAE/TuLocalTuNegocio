@@ -340,3 +340,15 @@ export async function adminKPI(fechaInicio, fechaFin) {
     return { ok: false, error: error?.message || "Error al cargar KPIs" };
   }
 }
+
+
+//Funcion para Mostar un Productos
+export async function mostrarProducto(id) {
+  try {
+    const { data } = await axiosClient.post("/producto", { id: Number(id) });
+    return data;
+  } catch (error) {
+    console.error("Error al mostrar producto:", error?.response?.data || error.message);
+    throw new Error("No se pudo obtener la información del producto.");
+  }
+}

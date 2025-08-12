@@ -1,7 +1,29 @@
 import { Link } from "react-router-dom";
 
 
-const ProductDetails = () => {
+const money = (v) => {
+  const n = Number(v ?? 0);
+  return n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 });
+};
+
+/** Util: fecha legible */
+const niceDate = (iso) => {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "2-digit" });
+};
+
+const ProductDetails = ({ product }) => {
+  if (!product) return null;
+
+  const mainImg =
+    product.images?.find((i) => Number(i.is_main) === 1)?.img_url ||
+    product.images?.[0]?.img_url ||
+    "/assets/images/nuevas/imagendefault.png";
+
+  const screenshots = (product.images || []).map((i) => i.img_url);
+  const vendor = product.vendor || {};
+  const category = product.category || {};
 
     return (
         <div className="product-details mt-32 padding-b-120">

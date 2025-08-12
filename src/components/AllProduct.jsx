@@ -322,7 +322,7 @@ const AllProduct = () => {
                     <div className="col-xl-4 col-sm-6" key={p.id}>
                       <div className="product-item section-bg">
                         <div className="product-item__thumb d-flex">
-                          <Link to={`/producto/${p.slug || p.id}`} className="link w-100">
+                          <Link to={`/product-details/${ p.id}`} className="link w-100">
                             <img
                               src={getCover(p)}
                               alt={p.name || "Producto"}
@@ -337,7 +337,7 @@ const AllProduct = () => {
 
                         <div className="product-item__content">
                           <h6 className="product-item__title">
-                            <Link to={`/producto/${p.slug || p.id}`} className="link">
+                            <Link to={`/product-details/${p.id}`} className="link">
                               {p.name}
                             </Link>
                           </h6>
@@ -345,7 +345,7 @@ const AllProduct = () => {
                           <div className="product-item__info flx-between gap-2">
                             <span className="product-item__author">
                               Por{" "}
-                              <Link to={`/vendedor/${p.vendor?.id || ""}`} className="link hover-text-decoration-underline">
+                              <Link to={`/profile/${p.vendor?.id || ""}`} className="link hover-text-decoration-underline">
                                 {p.vendor?.name || "Vendedor"}
                               </Link>
                             </span>
@@ -385,7 +385,7 @@ const AllProduct = () => {
                               </div>
                             </div>
 
-                            <Link to={`/product-details/${p.slug || p.id}`} className="btn btn-outline-light btn-sm pill">
+                            <Link to={`/product-details/${p.id}`} className="btn btn-outline-light btn-sm pill">
                               Ver detalles
                             </Link>
                           </div>
