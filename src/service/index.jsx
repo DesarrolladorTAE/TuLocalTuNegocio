@@ -249,11 +249,11 @@ export async function adminKPI(fechaInicio, fechaFin) {
     // Tarjetas (hero KPIs)
     const kpis = {
       productosActivos: productsRes?.catalog?.active ?? 0,
-      ventasTotales: ordersRes?.totals?.sales_paid ?? overviewRes?.orders?.sales_total ?? 0,
+      ventasTotales: (ordersRes?.totals?.sales_paid ?? overviewRes?.orders?.sales_total ?? 0),
       ordenes: ordersRes?.totals?.orders_paid ?? overviewRes?.orders?.count ?? 0,
       clientesActivos: usersRes?.active_clients ?? 0,
       repeatRate: usersRes?.repeat_rate_pct ?? 0,
-      donaciones: donationsRes?.totals?.amount ?? overviewRes?.donations?.amount_total ?? 0,
+      donaciones: (donationsRes?.totals?.amount ?? overviewRes?.donations?.amount_total ?? 0) / 100,
     };
 
     // Gráfica historial de ventas (línea/área)
@@ -350,5 +350,199 @@ export async function mostrarProducto(id) {
   } catch (error) {
     console.error("Error al mostrar producto:", error?.response?.data || error.message);
     throw new Error("No se pudo obtener la información del producto.");
+  }
+}
+
+// service/index.js
+export async function adminDetail(topic, fechaInicio, fechaFin) {
+  const token = getToken();
+
+  const toISO = (d) => {
+    if (!d) return null;
+    if (typeof d === "string") return d;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const from = toISO(fechaInicio);
+  const to = toISO(fechaFin);
+  const q = (params) => new URLSearchParams(params).toString();
+
+  // Mapa de tópico -> endpoint
+  const endpointByTopic = {
+    ventas: `admin/orders/summary?${q({ from, to })}`,     // series by_day, totals
+    ordenes: `admin/orders/funnel?${q({ from, to })}`,     // funnel, avg ticket, avg items
+    donaciones: `admin/donations/insights?${q({ from, to })}`, // serie diaria, ratios
+    usuarios: `admin/users/summary?${q({ from, to })}`,    // signups_by_day, activos, repeat
+    productos: `admin/products/summary?${q({ from, to })}`,// activos/inactivos (si lo tienes)
+    inventario: `admin/inventory/alerts?threshold=5`,      // low stock
+    categorias: `admin/categories/summary?${q({ from, to })}`, // ventas por categoría
+    vendedores: `admin/vendors/leaderboard?${q({ from, to })}`, // ranking vendedores
+    clientes: `admin/clients/leaderboard?${q({ from, to })}`,   // ranking clientes
+  };
+
+  const url = endpointByTopic[topic];
+  if (!url) throw new Error(`Tópico no soportado: ${topic}`);
+
+  const res = await axiosClient.get(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const data = res.data || {};
+
+  // Normaliza salida: { title, series:[], table:[], kpis:{} }
+  switch (topic) {
+    case "ventas": {
+      const rows = (data?.series?.by_day || []).map(d => ({
+        x: d.day,
+        orders: Number(d.orders || 0),
+        sales: Number(d.sales || 0),
+      }));
+      return {
+        title: "Historial de Ventas",
+        series: [
+          { name: "Ventas", data: rows.map(r => ({ x: r.x, y: r.sales })) },
+          { name: "Órdenes", data: rows.map(r => ({ x: r.x, y: r.orders })) },
+        ],
+        kpis: {
+          orders_paid: Number(data?.totals?.orders_paid || 0),
+          sales_paid: Number(data?.totals?.sales_paid || 0),
+          avg_ticket_paid: Number(data?.totals?.avg_ticket_paid || 0),
+        },
+        table: rows.map(r => ({ date: r.x, orders: r.orders, sales: r.sales })),
+      };
+    }
+    case "ordenes": {
+      const funnel = data?.funnel || [];
+      return {
+        title: "Embudo de Órdenes",
+        series: [], // aquí no hay serie temporal en este endpoint
+        kpis: {
+          avg_items_per_order: Number(data?.avg_items_per_order || 0),
+          avg_ticket_paid: Number(data?.avg_ticket_paid || 0),
+        },
+        table: funnel.map(f => ({
+          status: f.status,
+          qty: Number(f.qty || 0),
+          amount: Number(f.amount || 0),
+        })),
+      };
+    }
+    case "donaciones": {
+      const rows = (data?.series?.by_day || []).map(d => ({
+      x: d.day,
+      count: Number(d.count || 0),
+      amount: Number(d.amount || 0) / 100, // convertir a divisa real
+      }));
+      return {
+      title: "Donaciones",
+      series: [
+        { name: "Monto Donado", data: rows.map(r => ({ x: r.x, y: r.amount })) },
+        { name: "Donaciones (#)", data: rows.map(r => ({ x: r.x, y: r.count })) },
+      ],
+      kpis: {
+        donations_sum: Number(data?.totals?.donations_sum || 0) / 100,
+        donations_count: Number(data?.totals?.donations_count || 0),
+        avg_donation: Number(data?.totals?.avg_donation || 0) / 100,
+        attach_rate: Number(data?.totals?.donation_attach_rate_pct || 0),
+      },
+      table: rows.map(r => ({ date: r.x, donations: r.count, amount: r.amount })),
+      };
+    }
+    case "usuarios": {
+      const rows = (data?.series?.signups_by_day || []).map(d => ({
+        x: d.day,
+        users: Number(d.users || 0),
+      }));
+      return {
+        title: "Usuarios / Clientes",
+        series: [{ name: "Altas por día", data: rows.map(r => ({ x: r.x, y: r.users })) }],
+        kpis: {
+          signups: Number(data?.signups || 0),
+          active_clients: Number(data?.active_clients || 0),
+          repeat_buyers: Number(data?.repeat_buyers || 0),
+          repeat_rate_pct: Number(data?.repeat_rate_pct || 0),
+        },
+        table: rows.map(r => ({ date: r.x, signups: r.users })),
+      };
+    }
+    case "inventario": {
+      const low = (data?.low_stock_by_location || []).map(i => ({
+        product_id: i.product_id,
+        product: i.product,
+        address_id: i.address_id,
+        city: i.city,
+        state: i.state,
+        stock: Number(i.stock || 0),
+        is_active: !!i.is_active,
+      }));
+      return {
+        title: "Alertas de Inventario",
+        series: [],
+        kpis: { threshold: Number(data?.threshold || 5), inactive_products: (data?.inactive_products || []).length },
+        table: low,
+      };
+    }
+    case "categorias": {
+      const cats = (data?.categories || []).map(c => ({
+        category_id: c.category_id,
+        category: c.category,
+        units: Number(c.units || 0),
+        amount: Number(c.amount || 0),
+      }));
+      return {
+        title: "Ventas por Categoría",
+        series: [], // lo mostraremos como tabla/lista
+        kpis: {},
+        table: cats,
+      };
+    }
+    case "vendedores": {
+      const rows = (data?.leaderboard || []).map(r => ({
+        vendedor_id: r.vendedor_id,
+        vendedor: r?.vendedor?.name || `#${r.vendedor_id}`,
+        email: r?.vendedor?.email || "",
+        orders: Number(r.orders || 0),
+        sales: Number(r.sales || 0),
+      }));
+      const avgTicket = data?.avg_ticket || [];
+      return {
+        title: "Ranking de Vendedores",
+        series: [],
+        kpis: {},
+        table: rows.map(r => ({
+          ...r,
+          avg_ticket: Number(avgTicket.find(a => a.vendedor_id === r.vendedor_id)?.avg_ticket || 0),
+        })),
+      };
+    }
+    case "clientes": {
+      const rows = (data?.top_clients || []).map(r => ({
+        cliente_id: r.cliente_id,
+        cliente: r?.cliente?.name || `#${r.cliente_id}`,
+        email: r?.cliente?.email || "",
+        orders: Number(r.orders || 0),
+        spent: Number(r.spent || 0),
+      }));
+      return {
+        title: "Clientes Top",
+        series: [],
+        kpis: {},
+        table: rows,
+      };
+    }
+    case "productos": {
+      // Suponiendo que /admin/products/summary te entrega catalog.active/inactive/top...
+      return {
+        title: "Productos",
+        series: [],
+        kpis: {
+          activos: Number(data?.catalog?.active || 0),
+          inactivos: Number(data?.catalog?.inactive || 0),
+        },
+        table: (data?.top || []),
+      };
+    }
+    default:
+      return { title: "Detalle", series: [], kpis: {}, table: [] };
   }
 }

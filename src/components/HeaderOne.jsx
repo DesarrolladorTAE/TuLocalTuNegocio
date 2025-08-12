@@ -48,10 +48,9 @@ const HeaderOne = () => {
   }, []);
 
   const handleLogout = async () => {
-    await doLogout().then((res) => navigate("/login", { replace: true })).catch((err) => {
-      console.log('err', err)
-    });
-    ;
+    await doLogout()
+    navigate("/login", { replace: true })
+
   };
 
   useEffect(() => {
