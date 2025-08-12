@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
+import { logout } from "../service";
 
 const MasterLayout = ({ children }) => {
 
@@ -403,7 +404,7 @@ const MasterLayout = ({ children }) => {
                                     </NavLink>
                                 </li>
                                 <li className="sidebar-list__item">
-                                    <NavLink to="/login" className={(navData) =>
+                                    <NavLink to="/login" onClick={logout} className={(navData) =>
                                         navData.isActive ? "sidebar-list__link activePage" : "sidebar-list__link"
                                     }>
                                         <span className="sidebar-list__icon">
@@ -513,7 +514,7 @@ const MasterLayout = ({ children }) => {
                                                     </Link>
                                                 </li>
                                                 <li className="sidebar-list__item">
-                                                    <Link to="/login" className="sidebar-list__link">
+                                                    <Link to="/login" onClick={logout} className="sidebar-list__link">
                                                         <span className="sidebar-list__icon">
                                                             <img
                                                                 src="assets/images/icons/sidebar-icon13.svg"
