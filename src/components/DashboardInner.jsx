@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
-import { adminKPI } from "../service/index";
+import { adminKPI, adminDetail } from "../service/indexAdmin";
 
 const currency = (n) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }).format(Number(n || 0));
@@ -8,13 +8,41 @@ const num = (n) => new Intl.NumberFormat("es-MX").format(Number(n || 0));
 
 const DashboardInner = () => {
   const today = new Date();
+  today.setDate(today.getDate() + 1);
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-
+  const [selectedTopic, setSelectedTopic] = useState(null); // "ventas" | "ordenes" | "donaciones" | "usuarios" | "inventario" | ...
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailErr, setDetailErr] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [fechaInicio, setFechaInicio] = useState(firstDay.toISOString().slice(0, 10));
   const [fechaFin, setFechaFin] = useState(today.toISOString().slice(0, 10));
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+
+
+  const selectTopic = (topic) => {
+    setSelectedTopic(topic);
+  };
+
+  useEffect(() => {
+    let cancel = false;
+    if (!selectedTopic) return;
+    (async () => {
+      setDetailLoading(true);
+      setDetailErr(null);
+      try {
+        const d = await adminDetail(selectedTopic, fechaInicio, fechaFin);
+        if (!cancel) setDetail(d);
+      } catch (e) {
+        if (!cancel) setDetailErr(e?.message || "Error cargando detalle");
+      } finally {
+        if (!cancel) setDetailLoading(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [selectedTopic, fechaInicio, fechaFin]);
+
 
   // KPIs
   const [kpis, setKpis] = useState({
@@ -97,10 +125,8 @@ const DashboardInner = () => {
 
   return (
     <div className="dashboard-body__content">
-      {/* welcome balance */}
       <div className="welcome-balance mt-2 mb-40 flx-between gap-2">
         <div className="welcome-balance__left">
-          <h4 className="welcome-balance__title mb-0">Welcome back!</h4>
           <div className="d-flex gap-2 mt-2">
             <input
               type="date"
@@ -131,7 +157,13 @@ const DashboardInner = () => {
         <div className="dashboard-body__item">
           <div className="row gy-4">
             <div className="col-xl-3 col-sm-6">
-              <div className="dashboard-widget">
+              <div
+                className="dashboard-widget cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => selectTopic("productos")}
+                onKeyDown={(e) => e.key === "Enter" && selectTopic("productos")}
+              >
                 <img src="assets/images/shapes/widget-shape1.png" alt="" className="dashboard-widget__shape one" />
                 <img src="assets/images/shapes/widget-shape2.png" alt="" className="dashboard-widget__shape two" />
                 <span className="dashboard-widget__icon">
@@ -142,7 +174,7 @@ const DashboardInner = () => {
                     <h4 className="dashboard-widget__number mb-1 mt-3">
                       {num(kpis.productosActivos)}
                     </h4>
-                    <span className="dashboard-widget__text font-14">Total Products</span>
+                    <span className="dashboard-widget__text font-14">Total Productos</span>
                   </div>
                   <img src="assets/images/icons/chart-icon.svg" alt="" />
                 </div>
@@ -150,7 +182,13 @@ const DashboardInner = () => {
             </div>
 
             <div className="col-xl-3 col-sm-6">
-              <div className="dashboard-widget">
+              <div
+                className="dashboard-widget cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => selectTopic("donaciones")}
+                onKeyDown={(e) => e.key === "Enter" && selectTopic("donaciones")}
+              >
                 <img src="assets/images/shapes/widget-shape1.png" alt="" className="dashboard-widget__shape one" />
                 <img src="assets/images/shapes/widget-shape2.png" alt="" className="dashboard-widget__shape two" />
                 <span className="dashboard-widget__icon">
@@ -159,9 +197,9 @@ const DashboardInner = () => {
                 <div className="dashboard-widget__content flx-between gap-1 align-items-end">
                   <div>
                     <h4 className="dashboard-widget__number mb-1 mt-3">
-                      {currency(kpis.ventasTotales)}
+                      {currency(kpis.donaciones)}
                     </h4>
-                    <span className="dashboard-widget__text font-14">Total Earnings</span>
+                    <span className="dashboard-widget__text font-14">Total Donaciones</span>
                   </div>
                   <img src="assets/images/icons/chart-icon.svg" alt="" />
                 </div>
@@ -169,7 +207,13 @@ const DashboardInner = () => {
             </div>
 
             <div className="col-xl-3 col-sm-6">
-              <div className="dashboard-widget">
+              <div
+                className="dashboard-widget cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => selectTopic("ordenes")} // o "ventas" si prefieres el histórico
+                onKeyDown={(e) => e.key === "Enter" && selectTopic("ordenes")}
+              >
                 <img src="assets/images/shapes/widget-shape1.png" alt="" className="dashboard-widget__shape one" />
                 <img src="assets/images/shapes/widget-shape2.png" alt="" className="dashboard-widget__shape two" />
                 <span className="dashboard-widget__icon">
@@ -180,7 +224,7 @@ const DashboardInner = () => {
                     <h4 className="dashboard-widget__number mb-1 mt-3">
                       {num(kpis.ordenes)}
                     </h4>
-                    <span className="dashboard-widget__text font-14">Total Orders</span>
+                    <span className="dashboard-widget__text font-14">Total Ordenes</span>
                   </div>
                   <img src="assets/images/icons/chart-icon.svg" alt="" />
                 </div>
@@ -188,7 +232,13 @@ const DashboardInner = () => {
             </div>
 
             <div className="col-xl-3 col-sm-6">
-              <div className="dashboard-widget">
+              <div
+                className="dashboard-widget cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => selectTopic("usuarios")}
+                onKeyDown={(e) => e.key === "Enter" && selectTopic("usuarios")}
+              >
                 <img src="assets/images/shapes/widget-shape1.png" alt="" className="dashboard-widget__shape one" />
                 <img src="assets/images/shapes/widget-shape2.png" alt="" className="dashboard-widget__shape two" />
                 <span className="dashboard-widget__icon">
@@ -199,7 +249,7 @@ const DashboardInner = () => {
                     <h4 className="dashboard-widget__number mb-1 mt-3">
                       {num(kpis.clientesActivos)}
                     </h4>
-                    <span className="dashboard-widget__text font-14">Active Clients</span>
+                    <span className="dashboard-widget__text font-14">Clientes Activos</span>
                   </div>
                   <img src="assets/images/icons/chart-icon.svg" alt="" />
                 </div>
@@ -209,88 +259,136 @@ const DashboardInner = () => {
         </div>
 
         {/* Sales History + Right widget */}
-        <div className="dashboard-body__item">
-          <div className="row gy-4">
-            <div className="col-xl-8">
-              <div className="dashboard-card">
-                <div className="dashboard-card__header flx-between gap-2">
-                  <h6 className="dashboard-card__title mb-0">Sales History</h6>
-                  <div className="select-has-icon d-inline-block">
-                    <select className="select common-input select-sm" defaultValue={1}>
-                      <option value={1}>Daily</option>
-                    </select>
+        {/* Panel de detalle (drill-down) */}
+        {selectedTopic && (
+          <div className="dashboard-body__item">
+            <div className="dashboard-card">
+              <div className="dashboard-card__header flx-between gap-2">
+                <h6 className="dashboard-card__title mb-0">
+                  {detail?.title || "Detalle"}
+                </h6>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectedTopic(null)}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+
+              {detailLoading && (
+                <div className="p-3">Cargando detalle...</div>
+              )}
+              {detailErr && (
+                <div className="alert alert-danger m-3">{detailErr}</div>
+              )}
+
+              {!detailLoading && !detailErr && detail && (
+                <div className="p-3">
+                  {/* KPIs del panel (si hay) */}
+                  {detail.kpis && (
+                    <div className="row gy-3 mb-3">
+                      {Object.entries(detail.kpis).map(([k, v]) => (
+                        <div className="col-6 col-md-3" key={k}>
+                          <div className="p-3 rounded border">
+                            <div className="text-muted font-12">{k.replaceAll("_", " ").toUpperCase()}</div>
+                            <div className="fw-600">
+                              {typeof v === "number"
+                                ? (k.includes("amount") || k.includes("sales") || k.includes("ticket") || k.includes("donations") || k.includes("sum"))
+                                  ? currency(v)
+                                  : k.includes("pct") || k.includes("rate")
+                                    ? `${v}%`
+                                    : num(v)
+                                : String(v)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Gráfica si hay series con puntos (x,y) */}
+                  {Array.isArray(detail.series) && detail.series.length > 0 && detail.series[0].data?.length > 0 && (
+                    <div className="mb-4">
+                      <Chart
+                        options={{
+                          chart: { type: "area", toolbar: { show: false } },
+                          dataLabels: { enabled: false },
+                          stroke: { curve: "smooth" },
+                          xaxis: {
+                            type: "datetime",
+                            categories: detail.series[0].data.map(p => p.x),
+                          },
+                          tooltip: {
+                            shared: true,
+                            x: { format: "dd/MM/yy" },
+                          },
+                        }}
+                        series={detail.series.map(s => ({
+                          name: s.name,
+                          data: s.data.map(p => p.y),
+                        }))}
+                        type="area"
+                        height={380}
+                        width="100%"
+                      />
+                    </div>
+                  )}
+
+                  {/* Tabla de detalle */}
+                  <div className="table-responsive">
+                    <table className="table style-two">
+                      <thead>
+                        <tr>
+                          {detail.table && detail.table[0]
+                            ? Object.keys(detail.table[0]).map((h) => <th key={h}>{h.toUpperCase()}</th>)
+                            : <th>Sin datos</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.table && detail.table.length > 0 ? (
+                          detail.table.map((row, i) => (
+                            <tr key={i}>
+                              {Object.entries(row).map(([k, v]) => (
+                                <td key={k}>
+                                  {typeof v === "number"
+                                    ? (k.includes("amount") || k.includes("sales") || k.includes("spent") || k.includes("ticket"))
+                                      ? currency(v)
+                                      : num(v)
+                                    : String(v ?? "")}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="text-muted">Sin datos</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Acciones rápidas según tópico (opcional) */}
+                  <div className="mt-3 d-flex gap-2">
+                    {selectedTopic === "inventario" && (
+                      <button className="btn btn-sm btn-primary" onClick={() => setSelectedTopic("productos")}>
+                        Ver productos
+                      </button>
+                    )}
+                    {selectedTopic === "ventas" && (
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => setSelectedTopic("ordenes")}>
+                        Ver embudo de órdenes
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="dashboard-card__chart">
-                  <Chart
-                    options={chartData.options}
-                    series={chartData.series}
-                    type="area"
-                    height={"500"}
-                    width={"100%"}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="col-xl-4">
-              <div className="dashboard-card">
-                <div className="dashboard-card__header">
-                  <h6 className="dashboard-card__title mb-0">Ventas por Categoría</h6>
-                </div>
-                <ul className="country-list">
-                  {salesByCategory.slice(0, 10).map((c) => (
-                    <li key={c.category_id} className="country-list__item flx-between gap-2">
-                      <div className="country-list__content flx-align gap-2">
-                        <span className="country-list__flag">
-                          <img src="assets/images/thumbs/flag1.png" alt="" />
-                        </span>
-                        <span className="country-list__name">{c.category || "Sin categoría"}</span>
-                      </div>
-                      <span className="country-list__amount">{currency(c.amount)}</span>
-                    </li>
-                  ))}
-                  {!salesByCategory.length && (
-                    <li className="country-list__item flx-between gap-2">
-                      <span className="text-muted">Sin datos en el rango.</span>
-                    </li>
-                  )}
-                </ul>
-              </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Tabla diaria (Date / Item Sales / Earning) */}
-        <div className="dashboard-body__item">
-          <div className="table-responsive">
-            <table className="table style-two">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Item Sales</th>
-                  <th>Earning</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.map((r, idx) => (
-                  <tr key={idx}>
-                    <td>{r.date}</td>
-                    <td>{num(r.orders)}</td>
-                    <td>{currency(r.sales)}</td>
-                  </tr>
-                ))}
-                {!tableRows.length && (
-                  <tr>
-                    <td colSpan={3} className="text-center text-muted">
-                      {loading ? "Cargando..." : "Sin datos en el rango seleccionado"}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
     </div>
   );

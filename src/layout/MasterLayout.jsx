@@ -7,7 +7,6 @@ import ThemeToggle from "../components/ThemeToggle";
 import { logout } from "../service";
 
 const MasterLayout = ({ children }) => {
-
     let [active, setActive] = useState(false)
     let [show, setShow] = useState(false)
     let dashboardControl = () => {
@@ -17,7 +16,7 @@ const MasterLayout = ({ children }) => {
         setShow(!show)
     }
 
-
+    const user = JSON.parse(localStorage.getItem('user'))
 
     return (
         <>
@@ -161,7 +160,7 @@ const MasterLayout = ({ children }) => {
                                 </span>
                                 Create Account
                             </Link>
-                            <div className="language-select flx-align select-has-icon">
+                            {/* <div className="language-select flx-align select-has-icon">
                                 <img
                                     src="assets/images/icons/globe.svg"
                                     alt=""
@@ -178,7 +177,7 @@ const MasterLayout = ({ children }) => {
                                     <option value={3}>Eur</option>
                                     <option value={4}>Urd</option>
                                 </select>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
@@ -443,7 +442,7 @@ const MasterLayout = ({ children }) => {
                                 >
                                     <img src="assets/images/icons/angle-right.svg" alt="" />
                                 </button>
-                                <form action="#" className="search-input d-sm-block d-none">
+                                {/* <form action="#" className="search-input d-sm-block d-none">
                                     <span className="icon">
                                         <img
                                             src="assets/images/icons/search-dark.svg"
@@ -461,7 +460,7 @@ const MasterLayout = ({ children }) => {
                                         className="common-input common-input--md common-input--bg pill w-100"
                                         placeholder="Search here..."
                                     />
-                                </form>
+                                </form> */}
                             </div>
                             <div className="dashboard-nav__right" >
                                 <div className="header-right flx-align">
@@ -472,8 +471,11 @@ const MasterLayout = ({ children }) => {
                                             <button className="user-profile__button flex-align" onClick={showProfileControl}>
                                                 <span className="user-profile__thumb">
                                                     <img
-                                                        src="assets/images/thumbs/user-profile.png"
+                                                        src={user.avatar_url}
                                                         className="cover-img"
+                                                        onError={(e) => {
+                                                            e.target.src = 'https://taeconta.com/api/public/api/imagenPlantilla/20250812_141403.jpg';
+                                                        }}
                                                         alt=""
                                                     />
                                                 </span>
@@ -532,7 +534,7 @@ const MasterLayout = ({ children }) => {
                                                 </li>
                                             </ul>
                                         </div>
-                                        <div className="language-select flx-align select-has-icon">
+                                        {/* <div className="language-select flx-align select-has-icon">
                                             <img
                                                 src="assets/images/icons/globe.svg"
                                                 alt=""
@@ -549,7 +551,7 @@ const MasterLayout = ({ children }) => {
                                                 <option value={3}>Eur</option>
                                                 <option value={4}>Urd</option>
                                             </select>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             </div>

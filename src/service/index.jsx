@@ -302,11 +302,11 @@ export async function adminKPI(fechaInicio, fechaFin) {
     // Tarjetas (hero KPIs)
     const kpis = {
       productosActivos: productsRes?.catalog?.active ?? 0,
-      ventasTotales: ordersRes?.totals?.sales_paid ?? overviewRes?.orders?.sales_total ?? 0,
+      ventasTotales: (ordersRes?.totals?.sales_paid ?? overviewRes?.orders?.sales_total ?? 0),
       ordenes: ordersRes?.totals?.orders_paid ?? overviewRes?.orders?.count ?? 0,
       clientesActivos: usersRes?.active_clients ?? 0,
       repeatRate: usersRes?.repeat_rate_pct ?? 0,
-      donaciones: donationsRes?.totals?.amount ?? overviewRes?.donations?.amount_total ?? 0,
+      donaciones: (donationsRes?.totals?.amount ?? overviewRes?.donations?.amount_total ?? 0) / 100,
     };
 
     // Gráfica historial de ventas (línea/área)
@@ -405,6 +405,7 @@ export async function mostrarProducto(id) {
     throw new Error("No se pudo obtener la información del producto.");
   }
 }
+
 
 //Productos de un vendedor
 export async function productosPorVendedor(vendedorID) {
