@@ -1,8 +1,13 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
+
 const ProfileInner = () => {
   const user = JSON.parse(localStorage.getItem('user'))
   if (!user) {
     return <p>No hay datos de usuario</p>;
   }
+
+  
 
   return (
     <>
