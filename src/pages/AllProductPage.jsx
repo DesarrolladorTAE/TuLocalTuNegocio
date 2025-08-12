@@ -3,8 +3,6 @@ import Preloader from "../helper/Preloader";
 import HeaderOne from "../components/HeaderOne";
 import Breadcrumb from "../components/Breadcrumb";
 import AllProduct from "../components/AllProduct";
-import ResourceOne from "../components/ResourceOne";
-import BrandSectionOne from "../components/BrandSectionOne";
 import FooterOne from "../components/FooterOne";
 
 
@@ -26,15 +24,15 @@ const AllProductPage = () => {
       {/* AllProduct */}
       <AllProduct />
 
-      {/* ResourceOne */}
+      {/* ResourceOne
       <div className="resource-style-two">
         <ResourceOne />
-      </div>
+      </div> */}
 
 
       {/* BrandSectionOne */}
 
-      <BrandSectionOne />
+      {/* <BrandSectionOne /> */}
 
 
       {/* FooterOne */}

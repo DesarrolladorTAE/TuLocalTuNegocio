@@ -5,7 +5,6 @@ import Preloader from "../helper/Preloader";
 import HeaderOne from "../components/HeaderOne";
 import BreadcrumbTwo from "../components/BreadcrumbTwo";
 import ProductDetails from "../components/ProductDetails";
-import BrandSectionOne from "../components/BrandSectionOne";
 import FooterOne from "../components/FooterOne";
 
 
@@ -44,11 +43,6 @@ const ProductDetailsPage = () => {
 
       {/* Pasamos los datos del producto como prop */}
       <ProductDetails product={product} />
-
-      {/* BrandSectionOne */}
-
-      <BrandSectionOne />
-
 
       {/* FooterOne */}
       <FooterOne />

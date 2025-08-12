@@ -7,7 +7,7 @@ import {
   getUser,
   onAuthChange,
   logout as doLogout,
-  fetchCategorias
+  fetchCategorias,
 } from "../service";
 
 const HeaderOne = () => {
@@ -48,10 +48,11 @@ const HeaderOne = () => {
   }, []);
 
   const handleLogout = async () => {
-    await doLogout().then((res) => navigate("/login", { replace: true })).catch((err) => {
-      console.log('err', err)
-    });
-    ;
+    await doLogout()
+      .then((res) => navigate("/login", { replace: true }))
+      .catch((err) => {
+        console.log("err", err);
+      });
   };
 
   useEffect(() => {
@@ -106,10 +107,10 @@ const HeaderOne = () => {
             {/* Logo Start */}
             <div className="logo">
               <Link to="/" className="link white-version">
-                <img src="assets/images/logo/logo.png" alt="Logo" />
+                <img src="/assets/images/logo/logo.png" alt="Logo" />
               </Link>
               <Link to="/" className="link dark-version">
-                <img src="assets/images/logo/white-logo-two.png" alt="Logo" />
+                <img src="/assets/images/logo/white-logo-two.png" alt="Logo" />
               </Link>
             </div>
             {/* Logo End  */}
@@ -126,53 +127,38 @@ const HeaderOne = () => {
                     Productos
                   </NavLink>
                 </li>
+                {/* Header One - Categorías fijas */}
                 <li className="nav-menu__item has-mega-cats">
                   <span className="nav-menu__link">Categorías</span>
 
                   <div className="mega-cats-panel">
                     <div className="mega-cats-head">
                       <span className="title">Explora categorías</span>
-                      <a href="/all-product" className="view-all">Ver todas</a>
+                      <a href="/all-product" className="view-all">
+                        Ver todas
+                      </a>
                     </div>
 
                     {/* 3 filas x 10 columnas: simplemente renderiza los 30 items */}
                     <ul className="mega-cats-grid">
-                      {categorias.slice(0, 30).map(cat => (
+                      {categorias.slice(0, 30).map((cat) => (
                         <li key={cat.id} className="mega-cats-item">
-                          <a href={`/products/${cat.slug}`} className="mega-cats-link">
+                          <Link
+                            to={`/all-product?cat=${cat.id}`}
+                            className="mega-cats-link"
+                          >
                             {cat.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </li>
 
-
-                <li className="nav-menu__item has-submenu">
-                  <Link to="#" className="nav-menu__link">
-                    Tiendas
-                  </Link>
-                  <ul className="nav-submenu">
-                    <li className="nav-submenu__item">
-                      <NavLink to="/blog" className="nav-submenu__link">
-                        Blog
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink to="/blog-details" className="nav-submenu__link">
-                        Blog Details
-                      </NavLink>
-                    </li>
-                    <li className="nav-submenu__item">
-                      <NavLink
-                        to="/blog-details-sidebar"
-                        className="nav-submenu__link"
-                      >
-                        Blog Details Sidebar
-                      </NavLink>
-                    </li>
-                  </ul>
+                <li className="nav-menu__item">
+                  <NavLink to="/blog" className="nav-menu__link">
+                    Vendedores
+                  </NavLink>
                 </li>
 
                 <li className="nav-menu__item">
@@ -190,12 +176,12 @@ const HeaderOne = () => {
                 className="header-right__button cart-btn position-relative"
               >
                 <img
-                  src="assets/images/icons/cart.svg"
+                  src="/assets/images/icons/cart.svg"
                   alt=""
                   className="white-version"
                 />
                 <img
-                  src="assets/images/icons/cart-white.svg"
+                  src="/assets/images/icons/cart-white.svg"
                   alt=""
                   className="dark-version"
                 />
@@ -209,7 +195,7 @@ const HeaderOne = () => {
                 {!auth.isAuth ? (
                   <Link to="/register" className="btn btn-main pill">
                     <span className="icon-left icon">
-                      <img src="assets/images/icons/user.svg" alt="" />
+                      <img src="/assets/images/icons/user.svg" alt="" />
                     </span>
                     Crea una Cuenta
                   </Link>
@@ -267,6 +253,29 @@ const HeaderOne = () => {
           </nav>
         </div>
       </header>
+      <div className="mega-cats-bar">
+        <div className="container">
+          <div className="mega-cats-head">
+            <span className="title">Explora categorías</span>
+            <a href="/all-product" className="view-all">
+              Ver todas
+            </a>
+          </div>
+          <ul className="mega-cats-grid">
+            {categorias.slice(0, 30).map((cat) => (
+              <li key={cat.id} className="mega-cats-item">
+                <Link
+                  to={`/all-product?cat=${cat.id}`}
+                  className="mega-cats-link"
+                >
+                  {cat.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       {/* ==================== Header End Here ==================== */}
 
       <div className={`mobile-menu d-lg-none d-block ${active && "active"}`}>
@@ -280,12 +289,12 @@ const HeaderOne = () => {
         <div className="mobile-menu__inner">
           <Link to="/" className="mobile-menu__logo">
             <img
-              src="assets/images/logo/logo.png"
+              src="/assets/images/logo/logo.png"
               alt="Logo"
               className="white-version"
             />
             <img
-              src="assets/images/logo/white-logo-two.png"
+              src="/assets/images/logo/white-logo-two.png"
               alt="Logo"
               className="dark-version"
             />
@@ -312,7 +321,10 @@ const HeaderOne = () => {
                     <ul key={idx} className="nav-submenu__col">
                       {fila.map((cat) => (
                         <li key={cat.id} className="nav-submenu__item">
-                          <a href={`/all-product/${cat.slug}`} className="nav-submenu__link">
+                          <a
+                            href={`/all-product/${cat.slug}`}
+                            className="nav-submenu__link"
+                          >
                             {cat.name}
                           </a>
                         </li>
@@ -375,7 +387,7 @@ const HeaderOne = () => {
               {!auth.isAuth ? (
                 <Link to="/register" className="btn btn-main pill w-100">
                   <span className="icon-left icon">
-                    <img src="assets/images/icons/user.svg" alt="" />
+                    <img src="/assets/images/icons/user.svg" alt="" />
                   </span>
                   Crea una Cuenta
                 </Link>
@@ -391,17 +403,28 @@ const HeaderOne = () => {
                   </button>
                   <ul className="dropdown-menu w-100">
                     <li>
-                      <Link className="dropdown-item" to="/profile">Mi Perfil</Link>
+                      <Link className="dropdown-item" to="/profile">
+                        Mi Perfil
+                      </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/orders">Mis Pedidos</Link>
+                      <Link className="dropdown-item" to="/orders">
+                        Mis Pedidos
+                      </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/addresses">Direcciones</Link>
+                      <Link className="dropdown-item" to="/addresses">
+                        Direcciones
+                      </Link>
                     </li>
-                    <li><hr className="dropdown-divider" /></li>
                     <li>
-                      <button className="dropdown-item text-danger" onClick={handleLogout}>
+                      <hr className="dropdown-divider" />
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item text-danger"
+                        onClick={handleLogout}
+                      >
                         Cerrar sesión
                       </button>
                     </li>
@@ -409,7 +432,6 @@ const HeaderOne = () => {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>

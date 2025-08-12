@@ -54,72 +54,72 @@ const BrandSectionOne = () => {
           <Slider {...settings}>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img1.png"
+                src="/assets/images/thumbs/brand-img1.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img1.png"
+                src="/assets/images/thumbs/brand-white-img1.png"
                 alt=""
                 className="dark-version"
               />
             </div>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img2.png"
+                src="/assets/images/thumbs/brand-img2.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img2.png"
+                src="/assets/images/thumbs/brand-white-img2.png"
                 alt=""
                 className="dark-version"
               />
             </div>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img3.png"
+                src="/assets/images/thumbs/brand-img3.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img3.png"
+                src="/assets/images/thumbs/brand-white-img3.png"
                 alt=""
                 className="dark-version"
               />
             </div>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img4.png"
+                src="/assets/images/thumbs/brand-img4.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img4.png"
+                src="/assets/images/thumbs/brand-white-img4.png"
                 alt=""
                 className="dark-version"
               />
             </div>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img5.png"
+                src="/assets/images/thumbs/brand-img5.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img5.png"
+                src="/assets/images/thumbs/brand-white-img5.png"
                 alt=""
                 className="dark-version"
               />
             </div>
             <div className="brand-item d-flex align-items-center justify-content-center">
               <img
-                src="assets/images/thumbs/brand-img3.png"
+                src="/assets/images/thumbs/brand-img3.png"
                 alt=""
                 className="white-version"
               />
               <img
-                src="assets/images/thumbs/brand-white-img3.png"
+                src="/assets/images/thumbs/brand-white-img3.png"
                 alt=""
                 className="dark-version"
               />

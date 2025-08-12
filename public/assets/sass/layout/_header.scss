@@ -356,21 +356,23 @@
 /* ===== Mega panel de categorías (3 filas x 10 columnas) ===== */
 /* ===== Mega panel de categorías (responsive y accesible) ===== */
 :root {
-  --mega-col-min: 150px;    /* ancho mínimo de cada columna en desktop amplio */
+  --mega-col-min: 115px;    /* ancho mínimo de cada columna en desktop amplio */
   --mega-gap-x: 16px;       /* separación horizontal entre columnas */
   --mega-gap-y: 8px;        /* separación vertical entre filas */
   --mega-pad-x: 20px;       /* padding lateral del panel */
   --mega-maxvw: 96vw;       /* tope relativo al viewport */
 }
 
-.has-mega-cats { position: relative; }
+.has-mega-cats { 
+  position: static !important; 
+}
 
 /* Panel centrado bajo el menú */
 .mega-cats-panel {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: calc(100% + 12px);
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto;
 
   /* Calcula ancho para 10 cols + 9 gaps + paddings; con límites fluidos */
   width: clamp(
@@ -461,61 +463,45 @@
   &:hover { background: hsl(var(--gray-200)); }
 }
 
+/* ======== ÚNICO CAMBIO: texto más compacto y limitado a 2 líneas ======== */
 .mega-cats-link {
   position: relative;
-  display: block;
-  padding: 8px 10px 8px 22px;  /* espacio para bullet */
+  display: -webkit-box;              /* para line-clamp */
+  -webkit-box-orient: vertical;
+//   -webkit-line-clamp: 2;             /* máx. 2 líneas */
+  overflow: hidden;                  /* recorta el excedente */
+  padding: 6px 10px 6px 18px;        /* más compacto */
   border-radius: inherit;
   color: hsl(var(--heading-color));
   font-weight: 500;
-  @include font-15;
-  line-height: 1.28;
+  font-size: 13px;                   /* texto más chico */
+  line-height: 1.25;                 /* altura menor */
+  letter-spacing: -0.1px;
 
-  /* textos largos completos */
   white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   word-break: break-word;
+  overflow-wrap: anywhere;
   hyphens: auto;
 
   &:hover { color: hsl(var(--main)); }
+}
 
-  /* bullet alineado a primera línea */
-  &::before {
-    content: "";
-    position: absolute;
-    left: 8px;
-    top: 0.95em;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: hsl(var(--heading-color)/.35);
-  }
+/* bullet un poquito más pequeño para ganar espacio visual */
+.mega-cats-link::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0.9em;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: hsl(var(--heading-color)/.35);
 }
 
 /* ===== Breakpoints fluidos ===== */
-/* <= 1600px: 9 columnas */
-@media (max-width: 1600px) {
-  .mega-cats-panel {
-    width: clamp(
-      1000px,
-      calc(9 * var(--mega-col-min) + 8 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
-      var(--mega-maxvw)
-    );
-  }
-  .mega-cats-grid { grid-template-columns: repeat(9, minmax(var(--mega-col-min), 1fr)); }
-}
 
-/* <= 1400px: 8 columnas */
-@media (max-width: 1400px) {
-  .mega-cats-panel {
-    width: clamp(
-      920px,
-      calc(8 * var(--mega-col-min) + 7 * var(--mega-gap-x) + 2 * var(--mega-pad-x)),
-      var(--mega-maxvw)
-    );
-  }
-  .mega-cats-grid { grid-template-columns: repeat(8, minmax(var(--mega-col-min), 1fr)); }
-}
+
+
 
 /* <= 1200px: 6 columnas */
 @media (max-width: 1200px) {
@@ -548,10 +534,45 @@
     opacity: 1 !important;
     margin-top: 0 !important;
   }
-  .mega-cats-link { @include font-14; }
+//   .mega-cats-link { font-size: 14px; -webkit-line-clamp: 2; }
 }
 
 /* <= 576px: 1 columna (si quieres mantener 2, quita este bloque) */
 @media (max-width: 576px) {
   .mega-cats-grid { grid-template-columns: 1fr; }
 }
+
+/* Desktop: oculta el item "Categorías" cuando el header está al tope */
+@media (min-width: 992px) {
+  .header:not(.fixed-header) .has-mega-cats { 
+    display: none !important; 
+  }
+}
+
+/* (opcional) animación suave al aparecer) */
+.header.fixed-header .has-mega-cats {
+  animation: fadeInCats .18s ease-out;
+}
+@keyframes fadeInCats {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+// ***********************************************************************************************************
+
+
+/* hace que el <button> luzca como link/label del sidebar */
+.btn-reset{
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;      /* para ocupar todo el ancho como el <a> */
+}
+
+
+
+

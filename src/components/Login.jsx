@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { login, loginWithGoogle } from "../service";
@@ -8,16 +8,9 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const Login = () => {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    // remember: false,
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -25,6 +18,20 @@ const Login = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+  const handleGoogle = () => {
+    if (loading) return;
+    setLoading(true);
+    // Redirige fuera; al volver, la callback guardará la sesión
+    loginWithGoogle();
+  };
+
+  // opcional: si vienes de error en callback, muéstralo
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    if (err === "oauth") alertaError("No se pudo iniciar sesión con Google.");
+  }, []);
 
   const validar = () => {
     if (!form.email || !form.password) {
@@ -53,11 +60,10 @@ const Login = () => {
       });
 
       if (response.user.role == 3) {
-        navigate("/dashboard"); 
+        navigate("/dashboard");
       } else {
-        navigate("/"); 
+        navigate("/");
       }
-
     } catch (err) {
       const { response } = err || {};
       if (!response) {
@@ -140,7 +146,7 @@ const Login = () => {
                   <button
                     type="button"
                     className="btn btn-outline-light btn-lg-icon btn-lg w-100 pill d-flex align-items-center justify-content-center"
-                    onClick={loginWithGoogle}
+                    onClick={handleGoogle}
                     disabled={loading}
                   >
                     <span className="icon icon-left">
@@ -211,8 +217,6 @@ const Login = () => {
                     </span>
                   </div>
                 </div>
-
-
 
                 <div className="col-12">
                   <button

@@ -34,7 +34,7 @@ const ThemeToggle = () => {
               className="slider text-black header-right__button white-version"
               onClick={toggleTheme}
             >
-              <img src="assets/images/icons/sun.svg" alt="" />
+              <img src="/assets/images/icons/sun.svg" alt="" />
             </span>
           </>
         ) : (
@@ -43,7 +43,7 @@ const ThemeToggle = () => {
               className="slider text-black header-right__button dark-version"
               onClick={toggleTheme}
             >
-              <img src="assets/images/icons/moon.svg" alt="" />
+              <img src="/assets/images/icons/moon.svg" alt="" />
             </span>
           </>
         )}

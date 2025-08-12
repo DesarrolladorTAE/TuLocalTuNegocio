@@ -1,5 +1,8 @@
 import axiosClient from "../axiosClient";
 
+const API_URL = "https://tulocaltunego.com/api";
+const FRONT_URL = window.location.origin;
+
 const STORAGE_KEYS = { token: "token", user: "user" };
 let authState = { token: null, user: null };
 const listeners = new Set(); // para notificar cambios (opcional)
@@ -84,13 +87,22 @@ export function register(userData) {
   }
 }
 
-//Registrarse Con Google
+// Redirige al backend para autenticación con Google
 export function registerWithGoogle() {
-  window.location.href = "https://tulocaltunego.com/api/auth/google/redirect";
+  window.location.href = `${API_URL}/auth/google/redirect`;
 }
 
-const API_URL = "https://tulocaltunego.com/api";
-const FRONT_URL = window.location.origin;
+// Cuando el backend redirige al FRONT con los datos
+export function handleGoogleCallback(userData) {
+  // Guarda datos del usuario y token
+  localStorage.setItem("user", JSON.stringify(userData.user));
+  localStorage.setItem("token", userData.token);
+
+  // Opcional: establecer cabeceras globales de axios
+  // axios.defaults.headers.common["Authorization"] = `Bearer ${userData.token}`;
+}
+
+
 
 // Google: redirección a proveedor
 export function loginWithGoogle() {
@@ -106,9 +118,19 @@ export function handleOAuthCallbackFromURL() {
   const token = params.get("token");
   const userB64 = params.get("user");
   if (!token || !userB64) return false;
-  const user = JSON.parse(atob(userB64));
-  saveAuth({ token, user }, true);
-  return true;
+    try {
+    // Decodifica el usuario (Base64 → JSON)
+    const json = decodeURIComponent(escape(window.atob(userB64)));
+    const user = JSON.parse(json);
+
+    // Guarda token y usuario en localStorage
+    saveAuth({ token, user }, true);
+
+    return true;
+  } catch (e) {
+    console.error("Error al procesar callback de Google:", e);
+    return false;
+  }
 }
 
 export async function logout() {
@@ -175,21 +197,52 @@ export async function fetchCategorias() {
 //Todos Los Productos
 export async function indexProductos() {
   try {
-    const { data } = await axiosClient.get("productos"); // => {{tltn}}/api/productos si tu baseURL ya es {{tltn}}/api
-    return Array.isArray(data) ? data : [];
+    const { data } = await axiosClient.get("/productos"); // <-- endpoint correcto
+    // Acepta data, data.data o results
+    const list =
+      Array.isArray(data) ? data :
+      Array.isArray(data?.data) ? data.data :
+      Array.isArray(data?.results) ? data.results : [];
+
+    if (!Array.isArray(list)) {
+      throw new Error("Formato inesperado de la respuesta");
+    }
+    return list;
   } catch (err) {
-    // Log opcional para diagnóstico
-    console.error("Error al cargar productos:", err?.response?.data || err.message);
-    // Propaga un error legible para el front
-    throw new Error("No se pudieron cargar los productos. Intenta de nuevo.");
+    // Log detallado para depurar (status, payload del backend)
+    console.error(
+      "indexProductos()",
+      err?.response?.status,
+      err?.response?.data || err
+    );
+    // Reenvía un mensaje útil al componente
+    throw new Error(
+      err?.response?.data?.message ||
+      err?.message ||
+      "No se pudieron cargar los productos. Intenta de nuevo."
+    );
   }
 }
 
 //Filtro de Productos por Categorias
 export async function productsByCategory(categoryId) {
-  if (!categoryId && categoryId !== 0) throw new Error("categoryId requerido");
-  const { data } = await axiosClient.post("/categorias/productos", { id: Number(categoryId) });
-  return Array.isArray(data) ? data : [];
+  if (categoryId == null) throw new Error("categoryId requerido");
+  try {
+    const { data } = await axiosClient.post("/categorias/productos", { id: Number(categoryId) });
+    return Array.isArray(data) ? data :
+           Array.isArray(data?.data) ? data.data : [];
+  } catch (err) {
+    console.error(
+      "productsByCategory()",
+      err?.response?.status,
+      err?.response?.data || err
+    );
+    throw new Error(
+      err?.response?.data?.message ||
+      err?.message ||
+      "No se pudieron cargar los productos de la categoría."
+    );
+  }
 }
 
 // consultas admin
@@ -345,10 +398,43 @@ export async function adminKPI(fechaInicio, fechaFin) {
 //Funcion para Mostar un Productos
 export async function mostrarProducto(id) {
   try {
-    const { data } = await axiosClient.post("/producto", { id: Number(id) });
+    const { data } = await axiosClient.post("/mostrarProducto", { id: Number(id) });
     return data;
   } catch (error) {
     console.error("Error al mostrar producto:", error?.response?.data || error.message);
     throw new Error("No se pudo obtener la información del producto.");
+  }
+}
+
+//Productos de un vendedor
+export async function productosPorVendedor(vendedorID) {
+  const id = Number(vendedorID);
+  if (!Number.isFinite(id)) {
+    throw new Error("vendedorID inválido.");
+  }
+
+  try {
+    const { data } = await axiosClient.post(
+      "vendedorProduct",                 // <-- endpoint según tu doc: {{tltn}}vendedorProduct
+      { vendedorID: id },
+      { headers: { "Content-Type": "application/json" } }
+    );
+    // Aseguramos que siempre regrese un array
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data || err?.message;
+
+    if (status === 400) {
+      // "ID de vendedor no proporcionado" o "Este no es un vendedor"
+      throw new Error(
+        typeof msg === "string" ? msg : "Solicitud inválida (400)."
+      );
+    }
+    if (status === 404) {
+      // "Vendedor no encontrado"
+      throw new Error("Vendedor no encontrado (404).");
+    }
+    throw new Error("No se pudieron obtener los productos del vendedor.");
   }
 }

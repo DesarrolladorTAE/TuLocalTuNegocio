@@ -1,17 +1,21 @@
-
-
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { fetchCategorias, indexProductos, productsByCategory } from "../service";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  fetchCategorias,
+  indexProductos,
+  productsByCategory,
+} from "../service";
 
 const AllProduct = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [activeButton, setActiveButton] = useState("grid-view");
   const [filter, setFilter] = useState(false);
   const [categorias, setCategorias] = useState([]);
   const [categoriasAll, setCategoriasAll] = useState([]);
   const [productos, setProductos] = useState([]);
   const [activeCat, setActiveCat] = useState(null); // null = Todas
-  const [openCats, setOpenCats] = useState(true);   // 👉 controla colapso del bloque "Categorias"
+  const [openCats, setOpenCats] = useState(true); // 👉 controla colapso del bloque "Categorias"
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // Lista base (lo que viene del API, todas o por categoría)
@@ -30,12 +34,9 @@ const AllProduct = () => {
     const qn = norm(q);
     if (!qn) return list;
     return list.filter((p) =>
-      [
-        p.name,
-        p.description,
-        p?.category?.name,
-        p?.vendor?.name,
-      ].some((f) => norm(f).includes(qn))
+      [p.name, p.description, p?.category?.name, p?.vendor?.name].some((f) =>
+        norm(f).includes(qn)
+      )
     );
   };
 
@@ -53,6 +54,41 @@ const AllProduct = () => {
   const handleClick = (buttonName) => {
     setActiveButton(buttonName);
   };
+  // ===== Cargar según ?cat= =====
+  // ⬇️ lee ?cat= solo una vez al montar
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const catParam = new URLSearchParams(window.location.search).get("cat");
+        if (catParam) {
+          const id = Number(catParam);
+          const list = await productsByCategory(id);
+          if (!cancelled) {
+            setActiveCat(id);
+            setProductosRaw(list);
+            setSearch("");
+          }
+        } else {
+          const list = await indexProductos();
+          if (!cancelled) {
+            setActiveCat(null);
+            setProductosRaw(list);
+            setSearch("");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []); // ⬅️ Ojo: arreglo de deps vacío (solo una vez)
+
+  // ===== helpers para cambiar la URL (y así disparar el useEffect) =====
+  const goAll = () => setSearchParams({}); // /all-product
+  const goCat = (id) => setSearchParams({ cat: String(id) }); // /all-product?cat=ID
 
   // Si usas filtro por categoría:
   const loadAll = async () => {
@@ -67,9 +103,6 @@ const AllProduct = () => {
     setSearch(""); // opcional
   };
 
-  // al montar, cargar todas
-  useEffect(() => { loadAll().catch(console.error); }, []);
-
   // ✅ Normaliza la URL (tu API ya manda absoluta)
   const buildImageUrl = (path) => {
     if (!path) return "/assets/images/thumbs/placeholder-product.png";
@@ -82,8 +115,9 @@ const AllProduct = () => {
     if (!imgs.length) return "/assets/images/nuevas/imagendefault.png";
 
     const main =
-      imgs.find(im => im.is_main === 1 || im.is_main === true || im.is_main === "1") ||
-      imgs[0];
+      imgs.find(
+        (im) => im.is_main === 1 || im.is_main === true || im.is_main === "1"
+      ) || imgs[0];
 
     // tu API usa `img_url`; dejamos fallback a `image_url` por si cambia
     const url = main?.img_url || main?.image_url;
@@ -95,9 +129,6 @@ const AllProduct = () => {
     const n = Number(v);
     return Number.isFinite(n) ? `$${n.toFixed(2)}` : `$${v ?? "0.00"}`;
   };
-
-  // ✅ Handlers (fuera de otros handlers)
-  // const handleFilter = () => setFilter(f => !f);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +158,9 @@ const AllProduct = () => {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -145,28 +178,21 @@ const AllProduct = () => {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleFilter = () => {
     setFilter(!filter);
   };
 
-  // 👇 Cargar productos para la grilla
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await indexProductos();
-        if (!cancelled) setProductosRaw(list); // 👈 base
-      } catch (e) { console.error(e); }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   return (
-    <section className={`all-product padding-y-120 ${activeButton === "list-view" ? "list-view" : ""
-      }`}>
+    <section
+      className={`all-product padding-y-120 ${
+        activeButton === "list-view" ? "list-view" : ""
+      }`}
+    >
       <div className="container container-two">
         <div className="row">
           <div className="col-lg-12">
@@ -180,23 +206,36 @@ const AllProduct = () => {
                 </span>
                 <span className="font-18 fw-500">Filtros</span>
               </button>
-              <ul className="nav common-tab nav-pills mb-0 gap-lg-2 gap-1 ms-lg-auto" id="pills-tab" role="tablist">
+              <ul
+                className="nav common-tab nav-pills mb-0 gap-lg-2 gap-1 ms-lg-auto"
+                id="pills-tab"
+                role="tablist"
+              >
                 <li className="nav-item" role="presentation">
                   <button
                     className={`nav-link ${activeCat === null ? "active" : ""}`}
                     type="button"
-                    onClick={loadAll}
+                    onClick={() => {
+                      setActiveCat(null);
+                      loadAll();
+                    }}
                   >
                     Todas
                   </button>
                 </li>
 
-                {categorias.map(cat => (
+                {categorias.map((cat) => (
                   <li className="nav-item" role="presentation" key={cat.id}>
                     <button
-                      className={`nav-link ${activeCat === cat.id ? "active" : ""}`}
+                      key={cat.id}
+                      className={`nav-link ${
+                        activeCat === cat.id ? "active" : ""
+                      }`}
                       type="button"
-                      onClick={() => loadByCat(cat.id)}
+                      onClick={() => {
+                        setActiveCat(cat.id);
+                        loadByCat(cat.id);
+                      }}
                     >
                       {cat.name}
                     </button>
@@ -205,26 +244,31 @@ const AllProduct = () => {
               </ul>
               <div className="list-grid d-flex align-items-center gap-2">
                 <button
-                  className={`list-grid__button list-button d-sm-flex d-none text-body ${activeButton === "list-view" ? "active" : ""
-                    }`}
+                  className={`list-grid__button list-button d-sm-flex d-none text-body ${
+                    activeButton === "list-view" ? "active" : ""
+                  }`}
                   onClick={() => handleClick("list-view")}
                 >
                   <i className="las la-list" />
                 </button>
                 <button
-                  className={`list-grid__button grid-button d-sm-flex d-none  text-body ${activeButton === "grid-view" ? "active" : ""
-                    }`}
+                  className={`list-grid__button grid-button d-sm-flex d-none  text-body ${
+                    activeButton === "grid-view" ? "active" : ""
+                  }`}
                   onClick={() => handleClick("grid-view")}
                 >
                   <i className="las la-border-all" />
                 </button>
-                <button className="list-grid__button sidebar-btn text-body d-lg-none d-flex" onClick={handleFilter}>
+                <button
+                  className="list-grid__button sidebar-btn text-body d-lg-none d-flex"
+                  onClick={handleFilter}
+                >
                   <i className="las la-bars" />
                 </button>
               </div>
             </div>
-            <form action="#" className="filter-form pb-4 d-block">
-              <form className="filter-form pb-4 d-block" onSubmit={(e) => e.preventDefault()}>
+            <div className="filter-form pb-4 d-block">
+              <form className="d-block" onSubmit={(e) => e.preventDefault()}>
                 <div className="search-box d-flex">
                   <input
                     type="text"
@@ -233,13 +277,15 @@ const AllProduct = () => {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
-                  <button type="submit" className="btn btn-main btn-icon icon border-0">
+                  <button
+                    type="submit"
+                    className="btn btn-main btn-icon icon border-0"
+                  >
                     <img src="assets/images/icons/search.svg" alt="" />
                   </button>
                 </div>
               </form>
-
-            </form>
+            </div>
           </div>
           <div className="col-xl-3 col-lg-4">
             {/* ===================== Filter Sidebar Start ============================= */}
@@ -247,7 +293,7 @@ const AllProduct = () => {
               <button
                 type="button"
                 className="filter-sidebar__close p-2 position-absolute end-0 top-0 z-index-1 text-body hover-text-main font-20 d-lg-none d-block"
-                onClick={handleFilter}
+                onClick={() => setFilter((f) => !f)}
               >
                 <i className="las la-times" />
               </button>
@@ -256,12 +302,16 @@ const AllProduct = () => {
                 <button
                   type="button"
                   className="filter-sidebar__button font-16 text-capitalize fw-500 w-100 d-flex align-items-center"
-                  onClick={() => setOpenCats(o => !o)} // 👉 toggle colapso
+                  onClick={() => setOpenCats((o) => !o)} // 👉 toggle colapso
                   aria-expanded={openCats}
                   aria-controls="cats-content"
                 >
                   <span>Categorias</span>
-                  <span className={`ms-auto transition ${openCats ? "rotate-180" : ""}`}>
+                  <span
+                    className={`ms-auto transition ${
+                      openCats ? "rotate-180" : ""
+                    }`}
+                  >
                     <i className="las la-angle-down" />
                   </span>
                 </button>
@@ -275,29 +325,43 @@ const AllProduct = () => {
                   <ul className="filter-sidebar-list">
                     {/* Todas */}
                     <li className="filter-sidebar-list__item">
-                      <a
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); loadAll(); }}
-                        className={`filter-sidebar-list__text ${activeCat === null ? "active" : ""}`}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveCat(null);
+                          loadAll(); /* setCatParamSilently(null) opcional */
+                        }}
+                        className={`filter-sidebar-list__text btn-reset ${
+                          activeCat === null ? "active" : ""
+                        }`}
+                        aria-pressed={activeCat === null}
                       >
                         Todas las Categorias
                         <span className="qty">{categoriasAll.length}</span>
-                      </a>
+                      </button>
                     </li>
 
                     {/* Categorías */}
                     {categoriasAll.map((cat) => (
                       <li key={cat.id} className="filter-sidebar-list__item">
-                        <a
-                          href="#"
-                          onClick={(e) => { e.preventDefault(); loadByCat(cat.id); }}
-                          className={`filter-sidebar-list__text ${activeCat === cat.id ? "active" : ""}`}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveCat(cat.id);
+                            loadByCat(
+                              cat.id
+                            ); /* setCatParamSilently(cat.id) opcional */
+                          }}
+                          className={`filter-sidebar-list__text btn-reset ${
+                            activeCat === cat.id ? "active" : ""
+                          }`}
+                          aria-pressed={activeCat === cat.id}
                         >
                           {cat.name}
                           {cat.product_count != null && (
                             <span className="qty">{cat.product_count}</span>
                           )}
-                        </a>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -322,7 +386,10 @@ const AllProduct = () => {
                     <div className="col-xl-4 col-sm-6" key={p.id}>
                       <div className="product-item section-bg">
                         <div className="product-item__thumb d-flex">
-                          <Link to={`/product-details/${ p.id}`} className="link w-100">
+                          <Link
+                            to={`/product-details/${p.id}`}
+                            className="link w-100"
+                          >
                             <img
                               src={getCover(p)}
                               alt={p.name || "Producto"}
@@ -330,14 +397,21 @@ const AllProduct = () => {
                               loading="lazy"
                             />
                           </Link>
-                          <button type="button" className="product-item__wishlist" aria-label="Agregar a wishlist">
+                          <button
+                            type="button"
+                            className="product-item__wishlist"
+                            aria-label="Agregar a wishlist"
+                          >
                             <i className="fas fa-heart" />
                           </button>
                         </div>
 
                         <div className="product-item__content">
                           <h6 className="product-item__title">
-                            <Link to={`/product-details/${p.id}`} className="link">
+                            <Link
+                              to={`/product-details/${p.id}`}
+                              className="link"
+                            >
                               {p.name}
                             </Link>
                           </h6>
@@ -345,12 +419,17 @@ const AllProduct = () => {
                           <div className="product-item__info flx-between gap-2">
                             <span className="product-item__author">
                               Por{" "}
-                              <Link to={`/profile/${p.vendor?.id || ""}`} className="link hover-text-decoration-underline">
+                              <Link
+                                to={`/profile/${p.vendor?.id || ""}`}
+                                className="link hover-text-decoration-underline"
+                              >
                                 {p.vendor?.name || "Vendedor"}
                               </Link>
                             </span>
                             <div className="flx-align gap-2">
-                              <h6 className="product-item__price mb-0">{money(p.price)}</h6>
+                              <h6 className="product-item__price mb-0">
+                                {money(p.price)}
+                              </h6>
                               {/* Si tienes precio anterior, muéstralo como tachado */}
                               {p.prev_price ? (
                                 <span className="product-item__prevPrice text-decoration-line-through">
@@ -372,7 +451,10 @@ const AllProduct = () => {
                                 <ul className="star-rating">
                                   {/* Render simple de 5 estrellas o según p.rating */}
                                   {[...Array(5)].map((_, i) => (
-                                    <li className="star-rating__item font-11" key={i}>
+                                    <li
+                                      className="star-rating__item font-11"
+                                      key={i}
+                                    >
                                       <i className="fas fa-star" />
                                     </li>
                                   ))}
@@ -385,7 +467,10 @@ const AllProduct = () => {
                               </div>
                             </div>
 
-                            <Link to={`/product-details/${p.id}`} className="btn btn-outline-light btn-sm pill">
+                            <Link
+                              to={`/product-details/${p.id}`}
+                              className="btn btn-outline-light btn-sm pill"
+                            >
                               Ver detalles
                             </Link>
                           </div>
@@ -406,9 +491,10 @@ const AllProduct = () => {
               </div>
             </div>
           </div>
-
-        </div>{/* row */}
-      </div>{/* container */}
+        </div>
+        {/* row */}
+      </div>
+      {/* container */}
     </section>
   );
 };

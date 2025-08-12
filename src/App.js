@@ -26,6 +26,7 @@ import BlogPage from "./pages/BlogPage";
 import BlogDetailsPage from "./pages/BlogDetailsPage";
 import BlogDetailsSidebarPage from "./pages/BlogDetailsSidebarPage";
 import ContactPage from "./pages/ContactPage";
+import OAuthCallback from "./pages/OAuthCallback";
 
 
 function App() {
@@ -60,6 +61,9 @@ function App() {
 
         <Route exact path="/register" element={<RegisterPage />} />
         <Route exact path="/login" element={<LoginPage />} />
+        // e.g. App.jsx / router
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
+
 
       </Routes>
     </BrowserRouter>
