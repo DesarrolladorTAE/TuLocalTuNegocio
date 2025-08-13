@@ -39,7 +39,7 @@ const ProductDetailsPage = () => {
       <HeaderOne />
 
 
-      <BreadcrumbTwo/>
+      <BreadcrumbTwo product={product} />
 
       {/* Pasamos los datos del producto como prop */}
       <ProductDetails product={product} />

@@ -212,16 +212,7 @@ const HeaderOne = () => {
                           Mi Perfil
                         </Link>
                       </li>
-                      <li>
-                        <Link className="dropdown-item" to="/orders">
-                          Mis Pedidos
-                        </Link>
-                      </li>
-                      <li>
-                        <Link className="dropdown-item" to="/addresses">
-                          Direcciones
-                        </Link>
-                      </li>
+
                       <li>
                         <hr className="dropdown-divider" />
                       </li>
