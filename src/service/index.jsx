@@ -118,7 +118,7 @@ export function handleOAuthCallbackFromURL() {
   const token = params.get("token");
   const userB64 = params.get("user");
   if (!token || !userB64) return false;
-    try {
+  try {
     // Decodifica el usuario (Base64 → JSON)
     const json = decodeURIComponent(escape(window.atob(userB64)));
     const user = JSON.parse(json);
@@ -135,7 +135,7 @@ export function handleOAuthCallbackFromURL() {
 
 export async function logout() {
   try {
-    const res = await axiosClient.post("logout", null, {
+    await axiosClient.post("logout", null, {
       headers: {
         Authorization: `Bearer ${authState.token}`,
       },
@@ -201,8 +201,8 @@ export async function indexProductos() {
     // Acepta data, data.data o results
     const list =
       Array.isArray(data) ? data :
-      Array.isArray(data?.data) ? data.data :
-      Array.isArray(data?.results) ? data.results : [];
+        Array.isArray(data?.data) ? data.data :
+          Array.isArray(data?.results) ? data.results : [];
 
     if (!Array.isArray(list)) {
       throw new Error("Formato inesperado de la respuesta");
@@ -230,7 +230,7 @@ export async function productsByCategory(categoryId) {
   try {
     const { data } = await axiosClient.post("/categorias/productos", { id: Number(categoryId) });
     return Array.isArray(data) ? data :
-           Array.isArray(data?.data) ? data.data : [];
+      Array.isArray(data?.data) ? data.data : [];
   } catch (err) {
     console.error(
       "productsByCategory()",
