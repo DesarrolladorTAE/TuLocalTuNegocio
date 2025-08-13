@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Slider from "react-slick";
 import { fetchCategorias } from "../service"; // <-- tu función existente
 
-const DEFAULT_CAT_IMG = "/assets/images/icons/popular-default.svg"; // ← pon aquí tu imagen por defecto
+const DEFAULT_CAT_IMG = "/assets/images/nuevas/imagendefault.png"; // ← pon aquí tu imagen por defecto
 
 const PopularOne = () => {
   const [cats, setCats] = useState([]);
@@ -142,7 +142,7 @@ const PopularOne = () => {
     <section className="popular padding-y-120 overflow-hidden">
       <div className="container container-two">
         <div className="section-heading style-left mb-64">
-          <h5 className="section-heading__title">Popular Categories</h5>
+          <h5 className="section-heading__title">Todas Las Categorias</h5>
         </div>
 
         <div className="popular-slider arrow-style-two row gy-4">
@@ -175,7 +175,7 @@ const PopularOne = () => {
             to="/all-product"
             className="font-18 fw-600 text-heading hover-text-main text-decoration-underline font-heading"
           >
-            Explore More
+            Explora mas ...
           </Link>
         </div>
       </div>
