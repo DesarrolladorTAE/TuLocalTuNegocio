@@ -61,7 +61,6 @@ function App() {
 
         <Route exact path="/register" element={<RegisterPage />} />
         <Route exact path="/login" element={<LoginPage />} />
-        // e.g. App.jsx / router
         <Route path="/oauth/callback" element={<OAuthCallback />} />
 
 

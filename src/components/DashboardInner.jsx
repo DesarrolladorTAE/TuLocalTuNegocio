@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { adminKPI, adminDetail } from "../service/indexAdmin";
 
@@ -16,8 +16,6 @@ const DashboardInner = () => {
   const [detail, setDetail] = useState(null);
   const [fechaInicio, setFechaInicio] = useState(firstDay.toISOString().slice(0, 10));
   const [fechaFin, setFechaFin] = useState(today.toISOString().slice(0, 10));
-
-  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
 
@@ -54,74 +52,28 @@ const DashboardInner = () => {
     donaciones: 0,
   });
 
-  // Gráficas
-  const [salesHistory, setSalesHistory] = useState([]);       // [{date, orders, sales}]
-  const [salesByCategory, setSalesByCategory] = useState([]); // [{category, amount, units}]
 
-  // Tablas
-  const [topVendors, setTopVendors] = useState([]); // no se muestra aún en este layout
-  const [topClients, setTopClients] = useState([]); // no se muestra aún en este layout
 
   // Llamada inicial
   useEffect(() => {
     let cancel = false;
     (async () => {
-      setLoading(true);
+    
       setErr(null);
       try {
         const data = await adminKPI(fechaInicio, fechaFin);
         if (cancel || !data?.ok) return;
 
         setKpis(data.kpis || {});
-        setSalesHistory(data.charts?.salesHistory || []);
-        setSalesByCategory(data.charts?.salesByCategory || []);
-        setTopVendors(data.tables?.topVendors || []);
-        setTopClients(data.tables?.topClients || []);
       } catch (e) {
         if (!cancel) setErr(e?.message || "Error cargando dashboard");
       } finally {
-        if (!cancel) setLoading(false);
+      
       }
     })();
     return () => { cancel = true; };
   }, [fechaInicio, fechaFin]);
 
-  // Series para Apex desde salesHistory
-  const chartData = useMemo(() => {
-    const categories = salesHistory.map((d) => d.date);
-    const series = [
-      { name: "Ventas", data: salesHistory.map((d) => Number(d.sales || 0)) },
-      { name: "Órdenes", data: salesHistory.map((d) => Number(d.orders || 0)) },
-    ];
-    const options = {
-      chart: { height: 350, type: "area", toolbar: { show: false } },
-      dataLabels: { enabled: false },
-      stroke: { curve: "smooth" },
-      xaxis: { type: "datetime", categories },
-      yaxis: [
-        { title: { text: "Ventas" } },
-        { opposite: true, title: { text: "Órdenes" } },
-      ],
-      tooltip: {
-        shared: true,
-        x: { format: "dd/MM/yy" },
-        y: {
-          formatter: (val, { seriesIndex }) =>
-            seriesIndex === 0 ? currency(val) : num(val),
-        },
-      },
-    };
-    return { options, series };
-  }, [salesHistory]);
-
-  // Tabla diaria desde salesHistory
-  const tableRows = useMemo(() => {
-    return salesHistory.map((d) => ({
-      date: new Date(d.date).toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "short" }),
-      orders: d.orders,
-      sales: d.sales,
-    }));
-  }, [salesHistory]);
 
   return (
     <div className="dashboard-body__content">

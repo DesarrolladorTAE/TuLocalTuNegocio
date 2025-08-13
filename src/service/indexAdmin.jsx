@@ -17,16 +17,7 @@ function loadFrom(storage = localStorage) {
     }
   }
 }
-function saveAuth({ token, user }, persist = true) {
-  authState = { token, user };
-  const storage = persist ? localStorage : sessionStorage;
-  storage.setItem(STORAGE_KEYS.token, token);
-  storage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
-  // limpia el otro storage para evitar estados cruzados
-  (persist ? sessionStorage : localStorage).removeItem(STORAGE_KEYS.token);
-  (persist ? sessionStorage : localStorage).removeItem(STORAGE_KEYS.user);
-  notify();
-}
+
 function clearAuth() {
   authState = { token: null, user: null };
   localStorage.removeItem(STORAGE_KEYS.token);
@@ -295,24 +286,24 @@ export async function adminDetail(topic, fechaInicio, fechaFin) {
     }
     case "donaciones": {
       const rows = (data?.series?.by_day || []).map(d => ({
-      x: d.day,
-      count: Number(d.count || 0),
-      amount: Number(d.amount || 0) / 100, // convertir a divisa real
+        x: d.day,
+        count: Number(d.count || 0),
+        amount: Number(d.amount || 0) / 100, // convertir a divisa real
       }));
-    return {
-      title: "Donaciones",
-      series: [
-        { name: "Monto Donado", data: rows.map(r => ({ x: r.x, y: r.amount })) },
-        { name: "Donaciones (#)", data: rows.map(r => ({ x: r.x, y: r.count })) },
-      ],
-      kpis: {
-        donaciones_sum: Number(data?.totals?.donations_sum || 0) / 100,
-        donaciones_count: Number(data?.totals?.donations_count || 0),
-        promociones_donacion: Number(data?.totals?.avg_donation || 0) / 100,
-        // attach_rate: Number(data?.totals?.donation_attach_rate_pct || 0),
-      },
-      table: rows.map(r => ({ fecha: r.x, donaciones: r.count, monto: r.amount })),
-    };
+      return {
+        title: "Donaciones",
+        series: [
+          { name: "Monto Donado", data: rows.map(r => ({ x: r.x, y: r.amount })) },
+          { name: "Donaciones (#)", data: rows.map(r => ({ x: r.x, y: r.count })) },
+        ],
+        kpis: {
+          donaciones_sum: Number(data?.totals?.donations_sum || 0) / 100,
+          donaciones_count: Number(data?.totals?.donations_count || 0),
+          promociones_donacion: Number(data?.totals?.avg_donation || 0) / 100,
+          // attach_rate: Number(data?.totals?.donation_attach_rate_pct || 0),
+        },
+        table: rows.map(r => ({ fecha: r.x, donaciones: r.count, monto: r.amount })),
+      };
     }
     case "usuarios": {
       const rows = (data?.series?.signups_by_day || []).map(d => ({
@@ -410,5 +401,32 @@ export async function adminDetail(topic, fechaInicio, fechaFin) {
     }
     default:
       return { title: "Detalle", series: [], kpis: {}, table: [] };
+  }
+}
+
+export async function actualizarAdmin(data) {
+  const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
+
+  try {
+    const res = await axiosClient.post("user/actualizar", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
+  }
+}
+
+export async function mostrarUsuario(role) {
+  try {
+    const res = await axiosClient.post("mostrar/usuarios", {role});
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
   }
 }
