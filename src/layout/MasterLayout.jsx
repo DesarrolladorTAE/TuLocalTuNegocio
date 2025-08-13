@@ -247,7 +247,7 @@ const MasterLayout = ({ children }) => {
                                                 className="icon icon-active"
                                             />
                                         </span>
-                                        <span className="text">Profile</span>
+                                        <span className="text">Perfil</span>
                                     </NavLink>
                                 </li>
                                 <li className="sidebar-list__item">
@@ -266,10 +266,10 @@ const MasterLayout = ({ children }) => {
                                                 className="icon icon-active"
                                             />
                                         </span>
-                                        <span className="text">Followers</span>
+                                        <span className="text">Vendedores</span>
                                     </NavLink>
                                 </li>
-                                <li className="sidebar-list__item">
+                                {/* <li className="sidebar-list__item">
                                     <NavLink to="/following" className={(navData) =>
                                         navData.isActive ? "sidebar-list__link activePage" : "sidebar-list__link"
                                     }>
@@ -401,7 +401,7 @@ const MasterLayout = ({ children }) => {
                                         </span>
                                         <span className="text">Refunds</span>
                                     </NavLink>
-                                </li>
+                                </li> */}
                                 <li className="sidebar-list__item">
                                     <NavLink to="/login" onClick={logout} className={(navData) =>
                                         navData.isActive ? "sidebar-list__link activePage" : "sidebar-list__link"
@@ -564,20 +564,17 @@ const MasterLayout = ({ children }) => {
                         <div className="dashboard-footer bottom-footer-two mt-32 border-0 bg-white">
                             <div className="bottom-footer__inner flx-between gap-3">
                                 <p className="bottom-footer__text font-14">
-                                    {" "}
-                                    Copyright © 2024 DPmarket, All rights reserved.
+                                    © {new Date().getFullYear()}{" "}
+                                    <a
+                                        href="https://tecnologiasadministrativas.com/landing"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-decoration-none"
+                                    >
+                                        Tecnologías Administrativas ELAD
+                                    </a>
+                                    . Todos los derechos reservados.
                                 </p>
-                                <div className="footer-links gap-4">
-                                    <Link to="/#" className="footer-link hover-text-heading font-14">
-                                        Terms of service
-                                    </Link>
-                                    <Link to="/#" className="footer-link hover-text-heading font-14">
-                                        Privacy Policy
-                                    </Link>
-                                    <Link to="/#" className="footer-link hover-text-heading font-14">
-                                        cookies
-                                    </Link>
-                                </div>
                             </div>
                         </div>
                     </div>

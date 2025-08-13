@@ -9,12 +9,12 @@ const Preloader = () => {
   useEffect(() => {
     // Simula la verificación del token en localStorage
     const token = localStorage.getItem("token");
-    if (!token) {
-      setSessionExpired(true);
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 3000);
-    }
+    // if (!token) {
+    //   setSessionExpired(true);
+    //   setTimeout(() => {
+    //     window.location.href = "/login";
+    //   }, 3000);
+    // }
     setTimeout(() => {
       setActive(false);
     }, 500);
@@ -22,14 +22,14 @@ const Preloader = () => {
 
   const [countdown, setCountdown] = useState(3);
 
-  useEffect(() => {
-    if (sessionExpired) {
-      const interval = setInterval(() => {
-        setCountdown((prev) => prev > 0 ? prev - 1 : 0);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [sessionExpired]);
+  // useEffect(() => {
+  //   if (sessionExpired) {
+  //     const interval = setInterval(() => {
+  //       setCountdown((prev) => prev > 0 ? prev - 1 : 0);
+  //     }, 1000);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [sessionExpired]);
 
   return (
     <>

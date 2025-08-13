@@ -13,6 +13,8 @@ import CartThankYouPage from "./pages/CartThankYouPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardProfilePage from "./pages/DashboardProfilePage";
 import FollowerPage from "./pages/FollowerPage";
+import VendorProductsPage from "./components/ListarProductosAdmin.jsx";
+import ProductEditModal from "./components/ProductEditModal.jsx";
 import FollowingPage from "./pages/FollowingPage";
 import SettingPage from "./pages/SettingPage";
 import StatementPage from "./pages/StatementPage";
@@ -28,7 +30,6 @@ import BlogDetailsSidebarPage from "./pages/BlogDetailsSidebarPage";
 import ContactPage from "./pages/ContactPage";
 import OAuthCallback from "./pages/OAuthCallback";
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -38,7 +39,11 @@ function App() {
         <Route exact path="/" element={<HomePage />} />
         <Route exact path="/index-two" element={<HomePageTwo />} />
         <Route exact path="/all-product" element={<AllProductPage />} />
-        <Route exact path="/product-details/:id" element={<ProductDetailsPage />} />
+        <Route
+          exact
+          path="/product-details/:id"
+          element={<ProductDetailsPage />}
+        />
         <Route exact path="/profile" element={<ProfilePage />} />
         <Route exact path="/vendor/:id" element={<ProfilePage />} />
         <Route exact path="/cart" element={<CartPage />} />
@@ -46,8 +51,14 @@ function App() {
         <Route exact path="/cart-payment" element={<CartPaymentPage />} />
         <Route exact path="/cart-thank-you" element={<CartThankYouPage />} />
         <Route exact path="/dashboard" element={<DashboardPage />} />
-        <Route exact path="/dashboard-profile" element={<DashboardProfilePage />} />
+        <Route
+          exact
+          path="/dashboard-profile"
+          element={<DashboardProfilePage />}
+        />
         <Route exact path="/follower" element={<FollowerPage />} />
+        <Route path="/vendedor/:id/products" element={<VendorProductsPage />} />
+        <Route exact path="/ProductEditModal" element={<ProductEditModal />} />
         <Route exact path="/following" element={<FollowingPage />} />
         <Route exact path="/setting" element={<SettingPage />} />
         <Route exact path="/statement" element={<StatementPage />} />
@@ -57,14 +68,16 @@ function App() {
         <Route exact path="/refund" element={<RefundPage />} />
         <Route exact path="/blog" element={<BlogPage />} />
         <Route exact path="/blog-details" element={<BlogDetailsPage />} />
-        <Route exact path="/blog-details-sidebar" element={<BlogDetailsSidebarPage />} />
+        <Route
+          exact
+          path="/blog-details-sidebar"
+          element={<BlogDetailsSidebarPage />}
+        />
         <Route exact path="/contact" element={<ContactPage />} />
 
         <Route exact path="/register" element={<RegisterPage />} />
         <Route exact path="/login" element={<LoginPage />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />
-
-
       </Routes>
     </BrowserRouter>
   );

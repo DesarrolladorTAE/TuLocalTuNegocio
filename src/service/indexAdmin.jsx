@@ -423,7 +423,71 @@ export async function actualizarAdmin(data) {
 
 export async function mostrarUsuario(role) {
   try {
-    const res = await axiosClient.post("mostrar/usuarios", {role});
+    const res = await axiosClient.post("mostrar/usuarios", { role });
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
+  }
+}
+
+export async function actualizarProdcutoAdmin(producto) {
+  const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
+  try {
+    const res = await axiosClient.post("producto/actualizar", producto, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
+  }
+}
+
+export async function elimarProdAdmin(data) {
+  const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
+  try {
+    const res = await axiosClient.post("producto/eliminar", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
+  }
+}
+
+export async function refreshProdAdmin(vendedorID) {
+  const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
+  try {
+    const res = await axiosClient.post("vendedorProduct", { vendedorID }, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (error) {
+    // Re-lanza el error para manejarlo en el componente
+    throw error?.response?.data || error;
+  }
+}
+
+export async function subirBanner(data) {
+  const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
+  try {
+    const res = await axiosClient.post("subir/banner", data , {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data;
   } catch (error) {
     // Re-lanza el error para manejarlo en el componente
