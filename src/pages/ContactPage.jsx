@@ -1,7 +1,7 @@
 import React from "react";
 import Preloader from "../helper/Preloader";
 import HeaderOne from "../components/HeaderOne";
-import BrandSectionOne from "../components/BrandSectionOne";
+// import BrandSectionOne from "../components/BrandSectionOne";
 import FooterOne from "../components/FooterOne";
 import BreadcrumbEight from "../components/BreadcrumbEight";
 import Contact from "../components/Contact";
@@ -28,7 +28,7 @@ const ContactPage = () => {
 
 
       {/* BrandSectionOne */}
-      <BrandSectionOne />
+      {/* <BrandSectionOne /> */}
 
 
       {/* FooterOne */}

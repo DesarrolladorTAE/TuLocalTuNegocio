@@ -152,11 +152,11 @@ const HeaderOne = () => {
                   </div>
                 </li>
 
-                <li className="nav-menu__item">
+                {/* <li className="nav-menu__item">
                   <NavLink to="/blog" className="nav-menu__link">
                     Vendedores
                   </NavLink>
-                </li>
+                </li> */}
 
                 <li className="nav-menu__item">
                   <NavLink to="/contact" className="nav-menu__link">
@@ -168,7 +168,7 @@ const HeaderOne = () => {
             {/* Menu End  */}
             {/* Header Right start */}
             <div className="header-right flx-align">
-              <Link
+              {/* <Link
                 to="/cart"
                 className="header-right__button cart-btn position-relative"
               >
@@ -183,7 +183,7 @@ const HeaderOne = () => {
                   className="dark-version"
                 />
                 <span className="qty-badge font-12">0</span>
-              </Link>
+              </Link> */}
               {/* Light Dark Mode */}
               <ThemeToggle />
               {/* Light Dark Mode */}
@@ -322,49 +322,6 @@ const HeaderOne = () => {
                 </div>
               </li>
 
-              <li className="nav-menu__item has-submenu">
-                <Link to="#" className="nav-menu__link">
-                  Blog
-                </Link>
-                <ul className="nav-submenu">
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/blog"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Blog
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/blog-details"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Blog Details
-                    </NavLink>
-                  </li>
-                  <li className="nav-submenu__item">
-                    <NavLink
-                      to="/blog-details-sidebar"
-                      className={(navData) =>
-                        navData.isActive
-                          ? "nav-submenu__link activePage"
-                          : "nav-submenu__link"
-                      }
-                    >
-                      Blog Details Sidebar
-                    </NavLink>
-                  </li>
-                </ul>
-              </li>
               <li className="nav-menu__item">
                 <NavLink to="/contact" className="nav-menu__link">
                   Contact
@@ -394,19 +351,6 @@ const HeaderOne = () => {
                       <Link className="dropdown-item" to="/profile">
                         Mi Perfil
                       </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/orders">
-                        Mis Pedidos
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/addresses">
-                        Direcciones
-                      </Link>
-                    </li>
-                    <li>
-                      <hr className="dropdown-divider" />
                     </li>
                     <li>
                       <button

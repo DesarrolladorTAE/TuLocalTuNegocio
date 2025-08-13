@@ -5,13 +5,13 @@ import HeaderOne from "../components/HeaderOne";
 import BannerOne from "../components/BannerOne";
 import PopularOne from "../components/PopularOne";
 import ArrivalOne from "../components/ArrivalOne";
-import FeaturedOne from "../components/FeaturedOne";
-import SellingOne from "../components/SellingOne";
-import FeaturedAuthor from "../components/FeaturedAuthor";
-import PerformanceAuthor from "../components/PerformanceAuthor";
-import BlogOne from "../components/BlogOne";
-import BecomeSellerOne from "../components/BecomeSellerOne";
-import BrandSectionOne from "../components/BrandSectionOne";
+// import FeaturedOne from "../components/FeaturedOne";
+// import SellingOne from "../components/SellingOne";
+// import FeaturedAuthor from "../components/FeaturedAuthor";
+// import PerformanceAuthor from "../components/PerformanceAuthor";
+// import BlogOne from "../components/BlogOne";
+// import BecomeSellerOne from "../components/BecomeSellerOne";
+// import BrandSectionOne from "../components/BrandSectionOne";
 import FooterOne from "../components/FooterOne";
 
 const HomePage = () => {
@@ -37,25 +37,25 @@ const HomePage = () => {
     <ArrivalOne />
 
     {/* FeaturedOne */}
-    <FeaturedOne />
+    {/* <FeaturedOne  */}
 
     {/* SellingOne */}
-    <SellingOne />
+    {/* <SellingOne /> */}
 
     {/* FeaturedAuthor */}
-    <FeaturedAuthor />
+    {/* <FeaturedAuthor /> */}
 
     {/* PerformanceAuthor */}
-    <PerformanceAuthor />
+    {/* <PerformanceAuthor /> */}
 
     {/* BlogOne */}
-    <BlogOne />
+    {/* <BlogOne /> */}
 
     {/* BecomeSellerOne */}
-    <BecomeSellerOne />
+    {/* <BecomeSellerOne /> */}
 
     {/* BrandSectionOne */}
-    <BrandSectionOne />
+    {/* <BrandSectionOne /> */}
 
     {/* FooterOne */}
     <FooterOne />

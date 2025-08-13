@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 
 const BannerOne = () => {
   return (
@@ -32,7 +32,7 @@ const BannerOne = () => {
                     confiables. Compra fácil, segura y rápidamente en nuestra
                     tienda en línea."
                   </p>
-                  <div className="search-box">
+                  {/* <div className="search-box">
                     <input
                       type="text"
                       className="common-input common-input--lg pill shadow-sm"
@@ -44,7 +44,7 @@ const BannerOne = () => {
                     >
                       <img src="assets/images/icons/search.svg" alt="" />
                     </button>
-                  </div>
+                  </div> */}
                   {/* Tech List Start */}
 
                   {/* Tech List End */}

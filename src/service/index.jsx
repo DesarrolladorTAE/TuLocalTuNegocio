@@ -291,3 +291,194 @@ export async function productosPorVendedor(vendedorID) {
     throw new Error("No se pudieron obtener los productos del vendedor.");
   }
 }
+
+
+// Informacion del Usuario /me
+/** Lee el token desde localStorage */
+function getAuthToken() {
+  const direct = localStorage.getItem("token");
+  if (direct) return direct;
+
+  // por si lo guardaste dentro de algún objeto
+  try {
+    const auth = JSON.parse(localStorage.getItem("auth") || "null");
+    if (auth?.token) return auth.token;
+  } catch {}
+
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (user?.token) return user.token;
+  } catch {}
+
+  return null;
+}
+
+/** 👤 /api/me - Usuario autenticado por Bearer */
+export async function getMe({ cache = true } = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error("No hay token en localStorage.");
+
+  try {
+    const { data } = await axiosClient.get("me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    // Puede venir como { user: {...} } o el objeto directo
+    const me = data?.user ?? data;
+
+    if (cache) {
+      localStorage.setItem("user", JSON.stringify(me));
+    }
+    return me;
+  } catch (err) {
+    const status = err?.response?.status;
+    if (status === 401) throw new Error("Sesión expirada o no autorizada (401).");
+    throw new Error(err?.response?.data?.message || "No se pudo cargar el perfil /me.");
+  }
+}
+
+
+//Actualizar Informacion del usuario
+export async function actualizarUsuario(fields = {}, opts = {}) {
+  const { endpoint = "user/actualizar", method = "post", syncCache = true } = opts;
+
+  const token = getAuthToken();
+  if (!token) throw new Error("No hay token en localStorage.");
+
+  // normaliza alias
+  const payload = { ...fields };
+  if (payload.avatarFile && !payload.avatar) {
+    payload.avatar = payload.avatarFile;
+    delete payload.avatarFile;
+  }
+
+  const hasFile = payload.avatar instanceof File || payload.avatar instanceof Blob;
+
+  try {
+    let res;
+
+    if (hasFile) {
+      // --- MULTIPART ---
+      const fd = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        if (v instanceof File || v instanceof Blob) {
+          fd.append(k, v, v.name || "avatar.jpg"); // nombre por si falta
+        } else {
+          fd.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+        }
+      });
+
+      res = await axiosClient.request({
+        url: endpoint,
+        method,
+        data: fd,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          // ❗ NO fijes Content-Type: deja que axios ponga el boundary
+          "Content-Type": undefined,
+        },
+        // Limpia Content-Type que algún interceptor haya puesto
+        transformRequest: (data, headers) => {
+          delete headers.common?.["Content-Type"];
+          delete headers.post?.["Content-Type"];
+          delete headers["Content-Type"];
+          return data;
+        },
+      });
+    } else {
+      // --- JSON ---
+      res = await axiosClient.request({
+        url: endpoint,
+        method,
+        data: payload,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    const user = res.data?.user ?? res.data;
+    if (syncCache && user?.id) {
+      const prev = JSON.parse(localStorage.getItem("user") || "null") || {};
+      localStorage.setItem("user", JSON.stringify({ ...prev, ...user }));
+    }
+    return user;
+  } catch (err) {
+    const st = err?.response?.status;
+
+    if (st === 422) {
+      const payload = err?.response?.data;
+      const errors = payload?.errors || payload;
+      console.error("Validación 422:", errors);
+      const first =
+        errors?.avatar?.[0] ||
+        errors?.name?.[0] ||
+        (typeof errors === "string" ? errors : null);
+      throw new Error(first || "Datos inválidos (422).");
+    }
+    if (st === 401) throw new Error("No autorizado (401).");
+    if (st === 500) {
+      const msg = err?.response?.data?.message || "Error interno del servidor";
+      throw new Error(msg);
+    }
+    throw new Error(err?.response?.data?.message || "No se pudo actualizar el perfil.");
+  }
+}
+
+/** Azúcar: actualizar solo el avatar */
+export const actualizarSoloAvatar = (file, opts) =>
+  actualizarUsuario({ avatar: file }, opts);
+
+// --- NUEVO SERVICIO: subir solo avatar en multipart puro ---
+export async function actualizarAvatar(
+  file,
+  { endpoint = "user/actualizar" } = {} // <-- usa la misma ruta que en Postman
+) {
+  if (!(file instanceof File || file instanceof Blob)) {
+    throw new Error("Archivo inválido para avatar.");
+  }
+
+  // mismo helper que usas en actualizarUsuario
+  const token = typeof getAuthToken === "function" ? getAuthToken() : null;
+  if (!token) throw new Error("No hay token en localStorage.");
+
+  // arma la URL con el baseURL que ya tenga tu axiosClient (si existe)
+  const base = (axiosClient?.defaults?.baseURL || "").replace(/\/$/, "");
+  const url = `${base}/${endpoint.replace(/^\//, "")}`;
+
+  // ---- FORM DATA (multipart) ----
+  const fd = new FormData();
+  fd.append("avatar", file, file.name || "avatar.jpg"); // 👈 nombre EXACTO del campo
+
+  // DEBUG opcional: verifica qué va en el FormData
+  // console.log([...fd.entries()]);
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`, // ❗ NO pongas Content-Type aquí
+      Accept: "application/json",
+    },
+    body: fd,
+  });
+
+  let data;
+  try { data = await resp.json(); } catch { /* ignore */ }
+  if (!resp.ok) {
+    const msg =
+      data?.message ||
+      (data?.errors && (Object.values(data.errors)[0]?.[0] || JSON.stringify(data.errors))) ||
+      `Error ${resp.status}`;
+    throw new Error(msg);
+  }
+
+  // tu backend puede devolver { user, message } o el user directo
+  return data?.user ?? data;
+}

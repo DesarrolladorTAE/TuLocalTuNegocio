@@ -420,7 +420,7 @@ const AllProduct = () => {
                             <span className="product-item__author">
                               Por{" "}
                               <Link
-                                to={`/profile/${p.vendor?.id || ""}`}
+                                to={`/vendor/${p.vendor?.id || ""}`}
                                 className="link hover-text-decoration-underline"
                               >
                                 {p.vendor?.name || "Vendedor"}
