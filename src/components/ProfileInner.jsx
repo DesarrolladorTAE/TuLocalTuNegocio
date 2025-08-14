@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
-import { actualizarAdmin } from "../service/indexAdmin";
+import { actualizarAdmin, mostrarUsuario } from "../service/indexAdmin";
 import { register as apiRegister } from "../service/index"; // 👈 tu método de services
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
@@ -35,6 +35,8 @@ const ProfileInner = () => {
     message: "",
     severity: "success",
   });
+  const [adminsMock, setAdmin] = useState([]);
+
   const openSnack = (message, severity = "success") =>
     setSnack({ open: true, message, severity });
   const handleSnackClose = (_, reason) => {
@@ -97,6 +99,7 @@ const ProfileInner = () => {
   };
 
   useEffect(() => {
+    refrestAdmin()
     return () => {
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
@@ -257,7 +260,8 @@ const ProfileInner = () => {
         );
       }
 
-      // Si todos OK, limpia
+      // Si todos OK, limpia y acualiza
+      refrestAdmin()
       if (fail.length === 0) {
         resetAdmins({
           admins: [
@@ -283,6 +287,16 @@ const ProfileInner = () => {
   const emailWatch = watch("email");
   const phoneWatch = watch("phone");
   const descripcionWatch = watch("descripcion");
+
+
+  const refrestAdmin = () => {
+    mostrarUsuario(3).then((res) => {
+      console.log('admins: ', res)
+      setAdmin(res)
+    }).catch((err) => {
+      console.log('err: ', err)
+    })
+  }
 
   return (
     <>
@@ -524,162 +538,220 @@ const ProfileInner = () => {
                     </div>
 
                     {/* --------- NUEVO: Administradores --------- */}
-                    <div className="tab-pane fade" id="pills-admins" role="tabpanel" aria-labelledby="pills-admins-tab" tabIndex={0}>
-                      <form autoComplete="off" onSubmit={handleSubmitAdmins(crearAdministradores)}>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <h5 className="mb-0">Alta de administradores</h5>
-                          <button
-                            type="button"
-                            className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2"
-                            onClick={agregarFila}
+                    <div
+                      className="tab-pane fade"
+                      id="pills-admins"
+                      role="tabpanel"
+                      aria-labelledby="pills-admins-tab"
+                      tabIndex={0}
+                    >
+                      <div className="accordion" id="accordionAdmins">
+                        <div className="accordion-item">
+                          <h2 className="accordion-header" id="headingFormAdmins">
+                            <button
+                              className="accordion-button"
+                              type="button"
+                              data-bs-toggle="collapse"
+                              data-bs-target="#collapseFormAdmins"
+                              aria-expanded="true"
+                              aria-controls="collapseFormAdmins"
+                            >
+                              Alta de administradores
+                            </button>
+                          </h2>
+
+                          {/* 👇 El body va dentro del collapse */}
+                          <div
+                            id="collapseFormAdmins"
+                            className="accordion-collapse collapse show"
+                            aria-labelledby="headingFormAdmins"
+                            data-bs-parent="#accordionAdmins"
                           >
-                            <AddCircleOutlineIcon fontSize="small" />
-                            Agregar administrador
-                          </button>
-                        </div>
-
-                        {fields.length === 0 && (
-                          <div className="alert alert-info">No hay filas. Agrega un administrador.</div>
-                        )}
-
-                        {fields.map((field, idx) => {
-                          const base = `admins.${idx}`;
-                          const e = adminErrors?.admins?.[idx] || {};
-                          const rootErr = e?.root?.message;
-
-                          return (
-                            <div key={field.id} className="border rounded p-3 mb-3">
-                              <div className="d-flex justify-content-between align-items-center mb-2">
-                                <h6 className="mb-0">Administrador #{idx + 1}</h6>
-                                <button
-                                  type="button"
-                                  className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
-                                  onClick={() => remove(idx)}
-                                  title="Eliminar fila"
-                                >
-                                  <DeleteOutlineIcon fontSize="small" />
-                                  Quitar
-                                </button>
-                              </div>
-
-                              {rootErr && <div className="alert alert-danger py-2">{rootErr}</div>}
-
-                              <div className="row gy-3">
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Nombre *</label>
-                                  <input
-                                    className="common-input border"
-                                    placeholder="Nombre completo"
-                                    {...regAdmin(`${base}.name`, {
-                                      required: "El nombre es obligatorio.",
-                                      maxLength: { value: 255, message: "Máximo 255 caracteres." },
-                                    })}
-                                  />
-                                  {e?.name && <small className="text-danger">{e.name.message}</small>}
+                            <div className="accordion-body">
+                              <form autoComplete="off" onSubmit={handleSubmitAdmins(crearAdministradores)}>
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                  <h5 className="mb-0">Alta de administradores</h5>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2"
+                                    onClick={agregarFila}
+                                  >
+                                    <AddCircleOutlineIcon fontSize="small" />
+                                    Agregar administrador
+                                  </button>
                                 </div>
 
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Email *</label>
-                                  <input
-                                    type="email"
-                                    className="common-input border"
-                                    placeholder="correo@dominio.com"
-                                    {...regAdmin(`${base}.email`, {
-                                      required: "El email es obligatorio.",
-                                      pattern: { value: /\S+@\S+\.\S+/, message: "Email inválido." },
-                                    })}
-                                  />
-                                  {e?.email && <small className="text-danger">{e.email.message}</small>}
-                                </div>
+                                {fields.length === 0 && (
+                                  <div className="alert alert-info">No hay filas. Agrega un administrador.</div>
+                                )}
 
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Teléfono</label>
-                                  <input
-                                    className="common-input border"
-                                    placeholder="Opcional"
-                                    {...regAdmin(`${base}.phone`, {
-                                      maxLength: { value: 20, message: "Máximo 20 caracteres." },
-                                    })}
-                                  />
-                                  {e?.phone && <small className="text-danger">{e.phone.message}</small>}
-                                </div>
+                                {fields.map((field, idx) => {
+                                  const base = `admins.${idx}`;
+                                  const e = adminErrors?.admins?.[idx] || {};
+                                  const rootErr = e?.root?.message;
 
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Google ID</label>
-                                  <input
-                                    className="common-input border"
-                                    placeholder="Opcional"
-                                    {...regAdmin(`${base}.google_id`)}
-                                  />
-                                </div>
+                                  return (
+                                    <div key={field.id} className="border rounded p-3 mb-3">
+                                      <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 className="mb-0">Administrador #{idx + 1}</h6>
+                                        <button
+                                          type="button"
+                                          className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
+                                          onClick={() => remove(idx)}
+                                          title="Eliminar fila"
+                                        >
+                                          <DeleteOutlineIcon fontSize="small" />
+                                          Quitar
+                                        </button>
+                                      </div>
 
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Contraseña *</label>
-                                  <input
-                                    type="password"
-                                    className="common-input border"
-                                    placeholder="********"
-                                    {...regAdmin(`${base}.password`, {
-                                      required: "La contraseña es obligatoria.",
-                                      minLength: { value: 8, message: "Mínimo 8 caracteres." },
-                                    })}
-                                  />
-                                  {e?.password && <small className="text-danger">{e.password.message}</small>}
-                                </div>
+                                      {rootErr && <div className="alert alert-danger py-2">{rootErr}</div>}
 
-                                <div className="col-md-6">
-                                  <label className="form-label fw-600">Confirmar contraseña *</label>
-                                  <input
-                                    type="password"
-                                    className="common-input border"
-                                    placeholder="********"
-                                    {...regAdmin(`${base}.password_confirmation`, {
-                                      validate: (v) => {
-                                        const pw = getAdminValues(`${base}.password`);
-                                        return v === pw || "Las contraseñas no coinciden.";
-                                      },
-                                    })}
-                                  />
-                                  {e?.password_confirmation && (
-                                    <small className="text-danger">{e.password_confirmation.message}</small>
-                                  )}
-                                </div>
+                                      <div className="row gy-3">
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Nombre *</label>
+                                          <input
+                                            className="common-input border"
+                                            placeholder="Nombre completo"
+                                            {...regAdmin(`${base}.name`, {
+                                              required: "El nombre es obligatorio.",
+                                              maxLength: { value: 255, message: "Máximo 255 caracteres." },
+                                            })}
+                                          />
+                                          {e?.name && <small className="text-danger">{e.name.message}</small>}
+                                        </div>
 
-                                <div className="col-md-12 d-flex align-items-center gap-2">
-                                  <input
-                                    id={`chk-terminos-${idx}`}
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    defaultChecked
-                                    {...regAdmin(`${base}.terminos_aceptados`, {
-                                      required: "Debes aceptar los términos.",
-                                    })}
-                                  />
-                                  <label htmlFor={`chk-terminos-${idx}`} className="form-check-label">
-                                    Acepto términos y condiciones *
-                                  </label>
-                                  {e?.terminos_aceptados && (
-                                    <small className="text-danger ms-2">{e.terminos_aceptados.message}</small>
-                                  )}
-                                </div>
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Email *</label>
+                                          <input
+                                            type="email"
+                                            className="common-input border"
+                                            placeholder="correo@dominio.com"
+                                            {...regAdmin(`${base}.email`, {
+                                              required: "El email es obligatorio.",
+                                              pattern: { value: /\S+@\S+\.\S+/, message: "Email inválido." },
+                                            })}
+                                          />
+                                          {e?.email && <small className="text-danger">{e.email.message}</small>}
+                                        </div>
 
-                                {/* role fijo 3 (no editable) */}
-                                <div className="col-md-12">
-                                  <small className="text-muted">Este usuario se registrará con rol: <b>3 (Administrador)</b></small>
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Teléfono</label>
+                                          <input
+                                            className="common-input border"
+                                            placeholder="Opcional"
+                                            {...regAdmin(`${base}.phone`, {
+                                              maxLength: { value: 20, message: "Máximo 20 caracteres." },
+                                            })}
+                                          />
+                                          {e?.phone && <small className="text-danger">{e.phone.message}</small>}
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Google ID</label>
+                                          <input
+                                            className="common-input border"
+                                            placeholder="Opcional"
+                                            {...regAdmin(`${base}.google_id`)}
+                                          />
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Contraseña *</label>
+                                          <input
+                                            type="password"
+                                            className="common-input border"
+                                            placeholder="********"
+                                            {...regAdmin(`${base}.password`, {
+                                              required: "La contraseña es obligatoria.",
+                                              minLength: { value: 8, message: "Mínimo 8 caracteres." },
+                                            })}
+                                          />
+                                          {e?.password && <small className="text-danger">{e.password.message}</small>}
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label fw-600">Confirmar contraseña *</label>
+                                          <input
+                                            type="password"
+                                            className="common-input border"
+                                            placeholder="********"
+                                            {...regAdmin(`${base}.password_confirmation`, {
+                                              validate: (v) => {
+                                                const pw = getAdminValues(`${base}.password`);
+                                                return v === pw || "Las contraseñas no coinciden.";
+                                              },
+                                            })}
+                                          />
+                                          {e?.password_confirmation && (
+                                            <small className="text-danger">{e.password_confirmation.message}</small>
+                                          )}
+                                        </div>
+
+                                        <div className="col-md-12 d-flex align-items-center gap-2">
+                                          <input
+                                            id={`chk-terminos-${idx}`}
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            defaultChecked
+                                            {...regAdmin(`${base}.terminos_aceptados`, {
+                                              required: "Debes aceptar los términos.",
+                                            })}
+                                          />
+                                          <label htmlFor={`chk-terminos-${idx}`} className="form-check-label">
+                                            Acepto términos y condiciones *
+                                          </label>
+                                          {e?.terminos_aceptados && (
+                                            <small className="text-danger ms-2">{e.terminos_aceptados.message}</small>
+                                          )}
+                                        </div>
+
+                                        {/* role fijo 3 (no editable) */}
+                                        <div className="col-md-12">
+                                          <small className="text-muted">
+                                            Este usuario se registrará con rol: <b>3 (Administrador)</b>
+                                          </small>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                <div className="text-end">
+                                  <button className="btn btn-main btn-lg pill mt-2" disabled={isSubmittingAdmins}>
+                                    {isSubmittingAdmins ? "Creando..." : "Crear administradores"}
+                                  </button>
                                 </div>
-                              </div>
+                              </form>
                             </div>
-                          );
-                        })}
-
-                        <div className="text-end">
-                          <button className="btn btn-main btn-lg pill mt-2" disabled={isSubmittingAdmins}>
-                            {isSubmittingAdmins ? "Creando..." : "Crear administradores"}
-                          </button>
+                          </div>
+                          {/* 👆 Fin collapse */}
                         </div>
-                      </form>
+                      </div>
+
+                      {/* Lista de administradores (mock) */}
+                      <div className="mt-4">
+                        <h5 className="mb-3">Administradores registrados</h5>
+                        <ul className="list-group">
+                          {adminsMock.map((a) => (
+                            <li
+                              key={a.id}
+                              className="list-group-item d-flex justify-content-between align-items-center"
+                            >
+                              <div>
+                                <strong className="d-block">{a.name}</strong>
+                                <span className="text-muted d-block">{a.email}</span>
+                                <small className="text-muted">Tel: {a.phone || "—"}</small>
+                              </div>
+                              <span className={`badge ${a.status === "Activo" ? "bg-success" : "bg-secondary"}`}>
+                                {a.status}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    {/* --------- FIN pestaña Administradores --------- */}
+
                   </div>
                 </div>
               </div>

@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { login, loginWithGoogle } from "../service";
-import { alertaSuccess, alertaError } from "../utils/alerts";
+import {  alertaError } from "../utils/alerts";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ const Login = () => {
         // remember: form.remember,
       });
 
-      if (response.user.role == 3) {
+      if (response.user.role === 3) {
         navigate("/dashboard");
       } else {
         navigate("/");

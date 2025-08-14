@@ -1,18 +1,23 @@
-// OAuthCallback.jsx
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { handleOAuthCallbackFromURL, getUser } from "../service";
+import { handleOAuthCallbackFromURL } from "../service";
+import axiosClient from "../axiosClient";
+import { alertaError } from "../utils/alerts";
 
-export default function OAuthCallback() {
+export default function OauthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const ok = handleOAuthCallbackFromURL(); // guarda {token,user}
-    if (!ok) return navigate("/login?error=oauth", { replace: true });
-
-    const user = getUser();
-    const to = user?.role === 3 ? "/dashboard" : "/";
-    navigate(to, { replace: true });
+    const ok = handleOAuthCallbackFromURL();
+    if (ok) {
+      // setea Authorization por si recargas
+      const token = localStorage.getItem("token");
+      if (token) axiosClient.defaults.headers.common.Authorization = `Bearer ${token}`;
+      navigate("/", { replace: true });
+    } else {
+      alertaError("No se pudo iniciar sesión con Google.");
+      navigate("/login", { replace: true });
+    }
   }, [navigate]);
 
   return null;

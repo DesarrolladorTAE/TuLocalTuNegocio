@@ -107,9 +107,7 @@ export function handleGoogleCallback(userData) {
 // Google: redirección a proveedor
 export function loginWithGoogle() {
   const redirect = encodeURIComponent(`${FRONT_URL}/oauth/callback`);
-  window.location.assign(
-    `${API_URL}/auth/google/redirect?redirect=${redirect}`
-  );
+  window.location.assign(`${API_URL}/auth/google/redirect?redirect=${redirect}`);
 }
 
 // Google: manejar callback ?token=...&user=base64(json)
@@ -118,20 +116,26 @@ export function handleOAuthCallbackFromURL() {
   const token = params.get("token");
   const userB64 = params.get("user");
   if (!token || !userB64) return false;
+
   try {
-    // Decodifica el usuario (Base64 → JSON)
-    const json = decodeURIComponent(escape(window.atob(userB64)));
+    // base64 urlsafe → estándar
+    const b64 = userB64.replace(/-/g, "+").replace(/_/g, "/").padEnd(
+      Math.ceil(userB64.length / 4) * 4, "="
+    );
+
+    // Decodifica (compat UTF-8)
+    const json = decodeURIComponent(escape(window.atob(b64)));
     const user = JSON.parse(json);
 
-    // Guarda token y usuario en localStorage
+    // Guarda token + user (persistente)
     saveAuth({ token, user }, true);
-
     return true;
   } catch (e) {
     console.error("Error al procesar callback de Google:", e);
     return false;
   }
 }
+
 
 export async function logout() {
   try {
@@ -303,12 +307,12 @@ function getAuthToken() {
   try {
     const auth = JSON.parse(localStorage.getItem("auth") || "null");
     if (auth?.token) return auth.token;
-  } catch {}
+  } catch { }
 
   try {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     if (user?.token) return user.token;
-  } catch {}
+  } catch { }
 
   return null;
 }
