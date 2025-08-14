@@ -88,7 +88,7 @@ const ProfilePage = () => {
         </div>
       )}
 
-      <BrandSectionOne />
+      {/* <BrandSectionOne /> */}
       <FooterOne />
     </>
   );

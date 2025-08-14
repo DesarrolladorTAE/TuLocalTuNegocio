@@ -1,75 +1,233 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useForm } from "react-hook-form";
 import { createProduct } from "../service";
 import { alertaSuccess, alertaError } from "../utils/alerts";
 import { Link } from "react-router-dom";
 import Chart from "react-apexcharts";
 
+const emptyAddress = {
+  recipient: "",
+  phone: "",
+  street: "",
+  ext_no: "",
+  int_no: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+  zip: "",
+  references: "",
+};
+
+// 👇 Componente auxiliar para mostrar un error debajo del campo
+const FieldError = ({ error }) =>
+  error ? <small className="text-danger d-block mt-1">{error.message || String(error)}</small> : null;
+
 const Profile = () => {
   const [activeButton, setActiveButton] = useState("grid-view");
   const [files, setFiles] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(null);
 
-  const handleClick = (buttonName) => {
-    setActiveButton(buttonName);
+  // === Estado para direcciones ===
+  const [addressIdsInput, setAddressIdsInput] = useState(""); // "1,2,3"
+  const [addressSingle, setAddressSingle] = useState({ ...emptyAddress });
+
+  // === Estado para pivote (se sincroniza con RHF) ===
+  const [pivot, setPivot] = useState({
+    stock: "",
+    is_active: true,
+    available_from: "",
+    available_to: "",
+    notes: "",
+  });
+
+  const handleClick = (buttonName) => setActiveButton(buttonName);
+
+  // Demo chart (sin cambios)
+  const options = {
+    chart: { id: "apexchart-example" },
+    xaxis: { categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999] },
+  };
+  const series = [{ name: "series-1", data: [30, 40, 35, 50, 49, 60, 70, 91, 125] }];
+
+  // ===== Drop Zone =====
+  const inputRef = useRef(null);
+  const validateAndSetFiles = (incoming) => {
+    const list = Array.from(incoming || []);
+    const merged = [...files, ...list].slice(0, 10); // tope 10
+    if (merged.length > 10) {
+      alertaError("Solo puedes subir hasta 10 imágenes.");
+      return;
+    }
+    const tooBig = merged.find((f) => f.size > 2 * 1024 * 1024);
+    if (tooBig) {
+      alertaError(`"${tooBig.name}" excede 2MB.`);
+      return;
+    }
+    setFiles(merged);
   };
 
-  let options = {
-    chart: {
-      id: "apexchart-example",
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      validateAndSetFiles(e.dataTransfer.files);
     },
-    xaxis: {
-      categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999],
-    },
+    [files]
+  );
+  const onPick = (e) => validateAndSetFiles(e.target.files);
+  const removeFileAt = (idx) => {
+    setFiles((arr) => arr.filter((_, i) => i !== idx));
   };
-
-  let series = [
-    {
-      name: "series-1",
-      data: [30, 40, 35, 50, 49, 60, 70, 91, 125],
-    },
-  ];
-
-const handleSubmit = async (e) => {
+  const openPicker = () => inputRef.current?.click();
+  const prevent = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFilesChange = (fileList) => {
+    const arr = Array.from(fileList || []);
+    if (arr.length > 10) {
+      alertaError("Solo puedes subir hasta 10 imágenes.");
+      return;
+    }
+    // 2 MB c/u
+    const tooBig = arr.find((f) => f.size > 2 * 1024 * 1024);
+    if (tooBig) {
+      alertaError(`"${tooBig.name}" excede 2MB.`);
+      return;
+    }
+    setFiles(arr);
+  };
+
+  // ======= react-hook-form =======
+  const {
+    register,
+    handleSubmit: rhfHandleSubmit,
+    setError,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      name: "",
+      price: "",
+      stock: "",
+      category_id: "",
+      description: "",
+      address_id: "",
+      pivot: {
+        stock: "",
+        is_active: true,
+        available_from: "",
+        available_to: "",
+        notes: "",
+      },
+    },
+  });
+
+  // sincroniza pivot local -> RHF (para que viaje en el submit)
+  const syncPivot = (patch) => {
+    setPivot((prev) => {
+      const next = { ...prev, ...patch };
+      // reflejar en RHF
+      if ("stock" in patch) setValue("pivot.stock", next.stock);
+      if ("is_active" in patch) setValue("pivot.is_active", next.is_active);
+      if ("available_from" in patch) setValue("pivot.available_from", next.available_from);
+      if ("available_to" in patch) setValue("pivot.available_to", next.available_to);
+      if ("notes" in patch) setValue("pivot.notes", next.notes);
+      return next;
+    });
+  };
+
+  // Mapea errores de Laravel 422 -> RHF
+  const applyServerErrors = (laravelErrors = {}) => {
+    Object.entries(laravelErrors).forEach(([key, msgs]) => {
+      // key puede ser "name", "address.recipient", "address_ids.0", "images.2", "pivot.stock", etc.
+      const message = Array.isArray(msgs) ? msgs[0] : String(msgs);
+      // RHF soporta path con dot-notation
+      setError(key, { type: "server", message });
+    });
+  };
+
+  const onSubmit = async (data) => {
     try {
-      setSubmitting(true);
       setProgress(null);
 
-      const data = {
-        name: e.target.name.value,
-        description: e.target.description.value,
-        price: e.target.price.value,
-        stock: e.target.stock.value,
-        category_id: e.target.category_id.value,
-        images: files, // FileList o File[]
-      };
+      const fd = new FormData();
 
-      const resp = await createProduct(data, (p) => {
+      // Campos base (desde RHF)
+      fd.append("name", (data.name || "").trim());
+      fd.append("price", data.price);
+      fd.append("stock", data.stock);
+      if (data.category_id) fd.append("category_id", data.category_id);
+      if (data.description) fd.append("description", data.description);
+
+      // Imágenes
+      files.forEach((file) => fd.append("images[]", file));
+
+      // IDs de direcciones (mezcla campo suelto + lista controlada por estado)
+      if (data.address_id?.trim()) fd.append("address_id", data.address_id.trim());
+      addressIdsInput
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .forEach((val) => fd.append("address_ids[]", val));
+
+      // Dirección única (desde estado controlado existente)
+      const a = addressSingle;
+      const hasSingle = a.recipient || a.phone || a.street;
+      if (hasSingle) {
+        if (a.recipient) fd.append("address[recipient]", a.recipient);
+        if (a.phone) fd.append("address[phone]", a.phone);
+        if (a.street) fd.append("address[street]", a.street);
+        if (a.ext_no) fd.append("address[ext_no]", a.ext_no);
+        if (a.int_no) fd.append("address[int_no]", a.int_no);
+        if (a.neighborhood) fd.append("address[neighborhood]", a.neighborhood);
+        if (a.city) fd.append("address[city]", a.city);
+        if (a.state) fd.append("address[state]", a.state);
+        if (a.zip) fd.append("address[zip]", a.zip);
+        if (a.references) fd.append("address[references]", a.references);
+      }
+
+      // Pivot (desde RHF, sincronizado con estado)
+      if (pivot.stock !== "") fd.append("pivot[stock]", String(pivot.stock));
+      fd.append("pivot[is_active]", pivot.is_active ? "1" : "0");
+      if (pivot.available_from) fd.append("pivot[available_from]", pivot.available_from);
+      if (pivot.available_to) fd.append("pivot[available_to]", pivot.available_to);
+      if (pivot.notes) fd.append("pivot[notes]", pivot.notes);
+
+      const resp = await createProduct(fd, (p) => {
         if (typeof p?.percent === "number") setProgress(p.percent);
       });
 
       alertaSuccess(resp?.message || "Producto creado");
-      e.target.reset();
+
+      // Reset RHF + estados relacionados
+      reset();
       setFiles([]);
       setProgress(null);
+      setAddressIdsInput("");
+      setAddressSingle({ ...emptyAddress });
+      setPivot({ stock: "", is_active: true, available_from: "", available_to: "", notes: "" });
     } catch (err) {
+      const errors422 = err?.response?.data?.errors;
       const msg =
         err?.response?.data?.message ||
-        Object.values(err?.response?.data?.errors || {})?.[0]?.[0] ||
+        (errors422 && Object.values(errors422)?.[0]?.[0]) ||
         "No se pudo crear el producto";
+
+      if (errors422) applyServerErrors(errors422);
       alertaError(msg);
-    } finally {
-      setSubmitting(false);
     }
   };
 
 
+
+
   return (
     <section
-      className={`profile pt-5 padding-b-120 ${
-        activeButton === "list-view" ? "list-view" : ""
-      }`}
+      className={`profile pt-5 padding-b-120 ${activeButton === "list-view" ? "list-view" : ""
+        }`}
     >
       <div className="container container-two">
         <div className="tab-content" id="pills-tabb">
@@ -554,17 +712,15 @@ const handleSubmit = async (e) => {
             <div className="filter-tab gap-3 flx-between mb-5">
               <div className="list-grid d-flex align-items-center gap-2">
                 <button
-                  className={`list-grid__button list-button d-sm-flex d-none text-body ${
-                    activeButton === "list-view" ? "active" : ""
-                  }`}
+                  className={`list-grid__button list-button d-sm-flex d-none text-body ${activeButton === "list-view" ? "active" : ""
+                    }`}
                   onClick={() => handleClick("list-view")}
                 >
                   <i className="las la-list" />
                 </button>
                 <button
-                  className={`list-grid__button grid-button d-sm-flex d-none text-body ${
-                    activeButton === "grid-view" ? "active" : ""
-                  }`}
+                  className={`list-grid__button grid-button d-sm-flex d-none text-body ${activeButton === "grid-view" ? "active" : ""
+                    }`}
                   onClick={() => handleClick("grid-view")}
                 >
                   <i className="las la-border-all" />
@@ -9705,122 +9861,182 @@ const handleSubmit = async (e) => {
           >
             {/* ================== Setting Section Start ====================== */}
             <div className="row gy-4">
+              {/* Columna izquierda: formulario base + imágenes */}
               <div className="col-lg-8">
-                {/* <form action="#"> */}
-                {/* === Card: Nuevo Producto (mismos estilos) === */}
-                <div
-                  className="card common-card border border-gray-five overflow-hidden mb-24"
-                  id="nuevoProducto"
-                >
+                {/* Formulario de producto */}
+                <div className="card common-card border border-gray-five overflow-hidden mb-24" id="nuevoProducto">
                   <div className="card-header">
                     <h6 className="title">Nuevo Producto</h6>
                   </div>
                   <div className="card-body">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={rhfHandleSubmit(onSubmit)}>
                       <div className="row gy-3">
+                        {/* Datos base */}
                         <div className="col-sm-6 col-xs-6">
-                          <label htmlFor="name" className="form-label">
-                            Nombre *
-                          </label>
+                          <label htmlFor="name" className="form-label">Nombre *</label>
                           <input
                             type="text"
                             id="name"
-                            name="name"
                             className="common-input common-input--md border--color-dark bg--white"
-                            required
+                            {...register("name", { required: "El nombre del producto es obligatorio.", maxLength: { value: 255, message: "Máximo 255 caracteres." } })}
                           />
+                          <FieldError error={errors.name} />
                         </div>
 
                         <div className="col-sm-3 col-xs-6">
-                          <label htmlFor="price" className="form-label">
-                            Precio *
-                          </label>
+                          <label htmlFor="price" className="form-label">Precio *</label>
                           <input
                             type="number"
                             step="0.01"
                             id="price"
-                            name="price"
                             className="common-input common-input--md border--color-dark bg--white"
-                            required
+                            {...register("price", {
+                              required: "El precio es obligatorio.",
+                              valueAsNumber: true,
+                              min: { value: 0, message: "El precio no puede ser negativo." },
+                            })}
                           />
+                          <FieldError error={errors.price} />
                         </div>
 
                         <div className="col-sm-3 col-xs-6">
-                          <label htmlFor="stock" className="form-label">
-                            Stock *
-                          </label>
+                          <label htmlFor="stock" className="form-label">Stock *</label>
                           <input
                             type="number"
                             step="1"
                             id="stock"
-                            name="stock"
                             className="common-input common-input--md border--color-dark bg--white"
-                            required
+                            {...register("stock", {
+                              required: "El stock es obligatorio.",
+                              valueAsNumber: true,
+                              min: { value: 0, message: "El stock no puede ser negativo." },
+                            })}
                           />
+                          <FieldError error={errors.stock} />
                         </div>
 
                         <div className="col-sm-6 col-xs-6">
-                          <label htmlFor="category_id" className="form-label">
-                            ID Categoría
-                          </label>
+                          <label htmlFor="category_id" className="form-label">ID Categoría</label>
                           <input
                             type="text"
                             id="category_id"
-                            name="category_id"
                             className="common-input common-input--md border--color-dark bg--white"
                             placeholder="Ej. 26"
+                            {...register("category_id", {
+                              validate: (v) => !v || /^\d+$/.test(v) || "Debe ser numérico",
+                            })}
                           />
+                          <FieldError error={errors.category_id} />
                         </div>
 
                         <div className="col-sm-12">
-                          <label htmlFor="description" className="form-label">
-                            Descripción
-                          </label>
+                          <label htmlFor="description" className="form-label">Descripción</label>
                           <textarea
                             id="description"
-                            name="description"
                             className="common-input common-input--md border--color-dark bg--white"
                             placeholder="Describe tu producto"
+                            {...register("description")}
                           />
+                          <FieldError error={errors.description} />
                         </div>
 
-                        <div className="col-sm-12">
-                          <label htmlFor="images" className="form-label">
-                            Imágenes (máx. 10)
-                          </label>
-                          <input
-                            id="images"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="common-input common-input--md border--color-dark bg--white"
-                            onChange={(e) => setFiles(e.target.files)}
-                          />
-
-                          {/* Previews rápidos */}
-                          {files?.length > 0 && (
-                            <div className="d-flex gap-2 mt-2 flex-wrap">
-                              {Array.from(files)
-                                .slice(0, 10)
-                                .map((f, i) => (
-                                  <div key={i} className="border p-1 rounded">
-                                    <img
-                                      src={URL.createObjectURL(f)}
-                                      alt={`img-${i}`}
-                                      style={{
-                                        width: 80,
-                                        height: 80,
-                                        objectFit: "cover",
-                                        borderRadius: 8,
-                                      }}
-                                    />
-                                  </div>
-                                ))}
+                        {/* Direcciones por ID */}
+                        <div className="col-12">
+                          <h6 className="mb-2">Localidades / Direcciones</h6>
+                          <div className="row g-3">
+                            <div className="col-sm-6">
+                              <label className="form-label">address_id (opcional)</label>
+                              <input
+                                type="text"
+                                placeholder="Ej. 15"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                {...register("address_id", {
+                                  validate: (v) => !v || /^\d+$/.test(v) || "Debe ser numérico",
+                                })}
+                              />
+                              <FieldError error={errors.address_id} />
                             </div>
-                          )}
+                            <div className="col-sm-6">
+                              <label className="form-label">address_ids (lista, separados por coma)</label>
+                              <input
+                                type="text"
+                                value={addressIdsInput}
+                                onChange={(e) => setAddressIdsInput(e.target.value)}
+                                placeholder="Ej. 21, 22, 23"
+                                className="common-input common-input--md border--color-dark bg--white"
+                              />
+                              <FieldError error={errors["address_ids"]} />
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Progreso de subida */}
+                        {/* Pivot */}
+                        <div className="col-12">
+                          <div className="mt-3 p-3 border rounded">
+                            <h6 className="mb-2">Configuración por localidad (pivot por defecto)</h6>
+                            <div className="row g-3">
+                              <div className="col-sm-4">
+                                <label className="form-label">pivot.stock</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={pivot.stock}
+                                  onChange={(e) => syncPivot({ stock: e.target.value })}
+                                  className="common-input common-input--md border--color-dark bg--white"
+                                  placeholder="0"
+                                />
+                                <FieldError error={errors?.pivot?.stock} />
+                              </div>
+                              <div className="col-sm-4">
+                                <label className="form-label d-block">pivot.is_active</label>
+                                <div className="form-check form-switch">
+                                  <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id="pivot_is_active"
+                                    checked={pivot.is_active}
+                                    onChange={(e) => syncPivot({ is_active: e.target.checked })}
+                                  />
+                                  <label htmlFor="pivot_is_active" className="form-check-label">Activo</label>
+                                </div>
+                                <FieldError error={errors?.pivot?.is_active} />
+                              </div>
+                              <div className="col-sm-4">
+                                <label className="form-label">pivot.notes</label>
+                                <input
+                                  type="text"
+                                  value={pivot.notes}
+                                  onChange={(e) => syncPivot({ notes: e.target.value })}
+                                  className="common-input common-input--md border--color-dark bg--white"
+                                  placeholder="Notas opcionales"
+                                />
+                                <FieldError error={errors?.pivot?.notes} />
+                              </div>
+                              <div className="col-sm-6">
+                                <label className="form-label">pivot.available_from</label>
+                                <input
+                                  type="date"
+                                  value={pivot.available_from}
+                                  onChange={(e) => syncPivot({ available_from: e.target.value })}
+                                  className="common-input common-input--md border--color-dark bg--white"
+                                />
+                                <FieldError error={errors?.pivot?.available_from} />
+                              </div>
+                              <div className="col-sm-6">
+                                <label className="form-label">pivot.available_to</label>
+                                <input
+                                  type="date"
+                                  value={pivot.available_to}
+                                  onChange={(e) => syncPivot({ available_to: e.target.value })}
+                                  className="common-input common-input--md border--color-dark bg--white"
+                                />
+                                <FieldError error={errors?.pivot?.available_to} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progreso */}
                         {progress !== null && (
                           <div className="col-sm-12">
                             <div className="progress" style={{ height: 8 }}>
@@ -9832,626 +10048,177 @@ const handleSubmit = async (e) => {
                                 aria-valuemax="100"
                               />
                             </div>
-                            <small className="text-muted d-block mt-1">
-                              Subiendo… {progress}%
-                            </small>
+                            <small className="text-muted d-block mt-1">Subiendo… {progress}%</small>
                           </div>
                         )}
+                      </div>
+                      <div
+                        className="mt-3 p-3 border rounded"
+                        onDrop={onDrop}
+                        onDragOver={prevent}
+                        onDragEnter={prevent}
+                        onDragLeave={prevent}
+                      >
 
-                        <div className="col-sm-12">
-                          <button
-                            type="submit"
-                            className="btn btn-main btn-md w-100"
-                            disabled={submitting}
-                          >
-                            {submitting ? "Guardando…" : "Guardar Producto"}
-                          </button>
+                        {/* Encabezado estilo formulario */}
+                        <div className="">
+                          <h6 className="title m-0">Imágenes del producto</h6>
                         </div>
+
+                        <div className="card-body">
+                          <input
+                            ref={inputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            hidden
+                            onChange={onPick}
+                          />
+
+                          <div
+                            role="button"
+                            onClick={openPicker}
+                            className="w-100 mb-3 p-3 text-center border border-dashed rounded"
+                            style={{ borderStyle: "dashed", cursor: "pointer" }}
+                          >
+                            <div className="mb-1 fw-semibold text-dark">Arrastra y suelta aquí</div>
+                            <small className="text-muted">o haz clic para seleccionar (máx. 10, 2MB c/u)</small>
+                          </div>
+
+                          {/* Grid responsiva de 10 slots */}
+                          <div className="row g-2">
+                            {Array.from({ length: 10 }).map((_, i) => {
+                              const f = files[i];
+                              return (
+                                <div className="col-6 col-sm-4 col-md-3 col-lg-2" key={i}>
+                                  <div
+                                    className="position-relative border rounded d-flex align-items-center justify-content-center"
+                                    style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }}
+                                    onClick={openPicker}
+                                  >
+                                    {f ? (
+                                      <>
+                                        <img
+                                          src={URL.createObjectURL(f)}
+                                          alt={`img-${i}`}
+                                          className="position-absolute top-0 start-0 w-100 h-100"
+                                          style={{ objectFit: "cover" }}
+                                        />
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-danger position-absolute"
+                                          style={{ top: 6, right: 6 }}
+                                          onClick={(e) => { e.stopPropagation(); removeFileAt(i); }}
+                                          aria-label="Eliminar imagen"
+                                        >
+                                          ×
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <div
+                                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-muted"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        Slot {i + 1}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Preview principal grande (primer imagen) */}
+                          {files[0] && (
+                            <div className="mt-3">
+                              <label className="form-label fw-semibold">Preview principal</label>
+                              <div className="border rounded overflow-hidden">
+                                <img
+                                  src={URL.createObjectURL(files[0])}
+                                  alt="preview-principal"
+                                  style={{ width: "100%", height: 350, objectFit: "cover" }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Botón a LO ANCHO */}
+                      <div className="mt-3">
+                        <button type="submit" className="btn btn-main btn-md w-100" disabled={isSubmitting}>
+                          {isSubmitting ? "Guardando…" : "Agregar producto"}
+                        </button>
                       </div>
                     </form>
                   </div>
                 </div>
-                {/* </form> */}
+
+                {/* Imágenes del producto (debajo del form) */}
+
               </div>
-            </div>
-            {/* ================== Setting Section End ====================== */}
-          </div>
-          <div
-            className="tab-pane fade"
-            id="pills-hiddenItem"
-            role="tabpanel"
-            aria-labelledby="pills-hiddenItem-tab"
-            tabIndex={0}
-          >
-            {/* ========================== Hidden Item Start =========================== */}
-            <div className="row justify-content-center">
-              <div className="col-xxl-8 col-xl-10">
-                <div className="product-reject__wrapper">
-                  <div className="card common-card border border-gray-five overflow-hidden">
-                    <div className="card-body">
-                      <div className="product-reject__content d-flex flex-sm-row flex-column align-items-start gap-md-5 gap-4">
-                        <div className="product-reviewer flx-align flex-nowrap gap-3 flex-shrink-0">
-                          <div className="product-reviewer__thumb flex-shrink-0">
-                            <img
-                              src="assets/images/thumbs/client3.png"
-                              alt=""
-                            />
-                          </div>
-                          <div className="product-reviewer__content">
-                            <h6 className="product-reviewer__name mb-0">
-                              John Doe
-                            </h6>
-                            <span className="product-reviewer__designation font-14">
-                              Reviewer
-                            </span>
-                          </div>
-                        </div>
-                        <div className="product-reject__item flex-grow-1">
-                          <div className="product-reject-info flx-align flex-nowrap gap-3">
-                            <div className="product-reject-info__thumb flex-shrink-0">
-                              <img
-                                src="assets/images/thumbs/rejected1.png"
-                                alt=""
-                              />
-                            </div>
-                            <div className="product-reject-info__content">
-                              <h6 className="product-reject-info__name mb-0">
-                                Soft - reject CityScape HTML Template
-                              </h6>
-                              <span className="product-reject-info__date font-14">
-                                12 March 2024 at 09:21am
-                              </span>
-                            </div>
-                          </div>
-                          <ul className="response-list">
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                01.Responsive Issues:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Your files either inaccurately represented as
-                                responsive or have responsive layout iusser
-                                issues.please take a moment to make sure that
-                                your design layout looks correct at different
-                                breakpoints and that all text is scaled
-                                appropriately for smaller decices.
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                {" "}
-                                02.Typograpgy Hierarchy:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                As my understanding, there are two parts of
-                                hierarchy — Visual and Logic. For visual
-                                hierarchy, I usually use font matching, shapes
-                                or color to enhance it. And for logic hierarchy,
-                                I often start from the spacing control,
-                                especially poetic space art. Simply, we need to
-                                enhance the important content and tell the
-                                visitors which you should focus on
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                03. Placeholder Imagtes:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Please delete the images form the main and
-                                replace them with placeholders. so that so that
-                                client can just placeholder files.
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                04.Loding Time:
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Reduce web loading time, some times take more
-                                time for loading for open your URL. so fixed
-                                loading time.
-                              </p>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card common-card border border-gray-five overflow-hidden">
-                    <div className="card-body">
-                      <div className="product-reject__content d-flex flex-sm-row flex-column align-items-start gap-md-5 gap-4">
-                        <div className="product-reviewer flx-align flex-nowrap gap-3 flex-shrink-0">
-                          <div className="product-reviewer__thumb flex-shrink-0">
-                            <img
-                              src="assets/images/thumbs/client3.png"
-                              alt=""
-                            />
-                          </div>
-                          <div className="product-reviewer__content">
-                            <h6 className="product-reviewer__name mb-0">
-                              John William
-                            </h6>
-                            <span className="product-reviewer__designation font-14">
-                              Reviewer
-                            </span>
-                          </div>
-                        </div>
-                        <div className="product-reject__item flex-grow-1">
-                          <div className="product-reject-info flx-align flex-nowrap gap-3">
-                            <div className="product-reject-info__thumb flex-shrink-0">
-                              <img
-                                src="assets/images/thumbs/rejected1.png"
-                                alt=""
-                              />
-                            </div>
-                            <div className="product-reject-info__content">
-                              <h6 className="product-reject-info__name mb-0">
-                                Soft - reject FixTurbo HTML Template
-                              </h6>
-                              <span className="product-reject-info__date font-14">
-                                10 March 2024 at 10:35am
-                              </span>
-                            </div>
-                          </div>
-                          <ul className="response-list">
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                01.Responsive Issues:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Your files either inaccurately represented as
-                                responsive or have responsive layout iusser
-                                issues.please take a moment to make sure that
-                                your design layout looks correct at different
-                                breakpoints and that all text is scaled
-                                appropriately for smaller decices.
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                {" "}
-                                02.Typograpgy Hierarchy:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                As my understanding, there are two parts of
-                                hierarchy — Visual and Logic. For visual
-                                hierarchy, I usually use font matching, shapes
-                                or color to enhance it. And for logic hierarchy,
-                                I often start from the spacing control,
-                                especially poetic space art. Simply, we need to
-                                enhance the important content and tell the
-                                visitors which you should focus on
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                03. Placeholder Imagtes:{" "}
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Please delete the images form the main and
-                                replace them with placeholders. so that so that
-                                client can just placeholder files.
-                              </p>
-                            </li>
-                            <li className="response-list__item">
-                              <h6 className="response-list__title fw-600 mb-2">
-                                04.Loding Time:
-                              </h6>
-                              <p className="response-list__desc font-14">
-                                Reduce web loading time, some times take more
-                                time for loading for open your URL. so fixed
-                                loading time.
-                              </p>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* ========================== Hidden Item End =========================== */}
-          </div>
-          <div
-            className="tab-pane fade"
-            id="pills-refunded"
-            role="tabpanel"
-            aria-labelledby="pills-refunded-tab"
-            tabIndex={0}
-          >
-            {/* =========================== Refund Section Start ========================= */}
-            <div className="row gy-4">
-              <div className="col-lg-8">
-                <div className="refund-feedback">
-                  <h5 className="refund-feedback__title">
-                    Refund requests made against items you sold
-                  </h5>
-                  <p className="refund-feedback__desc">
-                    There are no open refund requests at the moment.
-                  </p>
-                </div>
-              </div>
+
+              {/* Columna derecha: Vivienda */}
               <div className="col-lg-4">
-                <div className="profile-sidebar">
-                  <div className="profile-sidebar__item">
-                    <h6 className="title font-body">Open Request</h6>
-                    <div className="select-has-icon">
-                      <select className="common-input" defaultValue={1}>
-                        <option value={1}>Open Requests</option>
-                        <option value={1}>Open Requests</option>
-                        <option value={1}>Open Requests</option>
-                      </select>
+                <div className="card common-card border border-gray-five overflow-hidden">
+                  <div className="card-header">
+                    <h6 className="title">Vivienda / Dirección del vendedor</h6>
+                  </div>
+                  <div className="card-body">
+                    <small className="text-muted d-block mb-2">
+                      Si llenas esta sección, el backend requiere <strong>Destinatario, Teléfono y Calle</strong>.
+                    </small>
+                    <div className="row g-2">
+                      {[
+                        ["recipient", "Destinatario *"],
+                        ["phone", "Teléfono *"],
+                        ["street", "Calle *"],
+                        ["ext_no", "No. Ext"],
+                        ["int_no", "No. Int"],
+                        ["neighborhood", "Colonia"],
+                        ["city", "Ciudad"],
+                        ["state", "Estado"],
+                        ["zip", "C.P."],
+                      ].map(([key, label]) => (
+                        <div className="col-12" key={key}>
+                          <label className="form-label">{label}</label>
+                          <input
+                            type="text"
+                            value={addressSingle[key]}
+                            onChange={(e) => setAddressSingle((s) => ({ ...s, [key]: e.target.value }))}
+                            className="common-input common-input--md border--color-dark bg--white"
+                          />
+                        </div>
+                      ))}
+                      <div className="col-12">
+                        <label className="form-label">Referencias</label>
+                        <textarea
+                          value={addressSingle.references}
+                          onChange={(e) => setAddressSingle((s) => ({ ...s, references: e.target.value }))}
+                          className="common-input common-input--md border--color-dark bg--white"
+                          placeholder="Punto de referencia, horario, etc."
+                        />
+                      </div>
                     </div>
+
+                    <hr className="my-3" />
+                    <label className="form-label">IDs de direcciones existentes</label>
+                    <input
+                      type="text"
+                      value={addressIdsInput}
+                      onChange={(e) => setAddressIdsInput(e.target.value)}
+                      placeholder="Ej. 21, 22, 23"
+                      className="common-input common-input--md border--color-dark bg--white"
+                    />
+                    <small className="text-muted d-block mt-1">
+                      También puedes usar el campo <code>address_id</code> en el formulario principal.
+                    </small>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ========================= Statement section start =========================== */}
-            <div className="row gy-4">
-              <div className="col-lg-6">
-                <div className="statement-item card common-card border border-gray-five">
-                  <div className="card-body">
-                    <div className="statement-item__header">
-                      <h6 className="statement-item__title">Total Earning</h6>
-                    </div>
-                    <ul className="statement-list">
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          My Funds
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Earnings
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Tax Withheld
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Fees
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="col-lg-6">
-                <div className="statement-item card common-card border border-gray-five">
-                  <div className="card-body">
-                    <div className="statement-item__header">
-                      <h6 className="statement-item__title">
-                        Monthly Earnings
-                      </h6>
-                    </div>
-                    <ul className="statement-list">
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          My Funds
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Earnings
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Tax Withheld
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                      <li className="statement-list__item text-center">
-                        <span className="statement-list__text font-13">
-                          Fees
-                        </span>
-                        <h6 className="statement-list__amount mb-0 mt-1 fw-600">
-                          $0.00
-                        </h6>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ========================= Download Section Start ====================== */}
-            <div className="row gy-4">
-              <div className="col-lg-12">
-                <div className="search-box">
-                  <input
-                    type="text"
-                    className="common-input common-input--lg pill border border-gray-five"
-                    placeholder="Search Your Downloads"
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-main btn-icon icon border-0"
-                  >
-                    <img src="assets/images/icons/search.svg" alt="" />
-                  </button>
-                </div>
-              </div>
-              <div className="col-lg-12">
-                <div className="download-wrapper ">
-                  <div className="download-item flx-between gap-3">
-                    <div className="download-item__content flx-align flex-nowrap gap-3 flex-grow-1">
-                      <div className="download-item__thumb flex-shrink-0">
-                        <img src="assets/images/thumbs/rejected1.png" alt="" />
-                      </div>
-                      <div className="download-item__info">
-                        <h6 className="download-item__title mb-1">
-                          <Link to="#" className="link">
-                            CityScape - Real Estate HTML Template
-                          </Link>
-                        </h6>
-                        <Link
-                          to="#"
-                          className="download-item__text text-main mb-3 font-12 hover-text-decoration-underline"
-                        >
-                          Tools License
-                        </Link>
-                        <div className="common-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            name="checkbox"
-                            id="notifiedd"
-                          />
-                          <label
-                            className="form-check-label text-body fw-400 mb-0"
-                            htmlFor="notifiedd"
-                          >
-                            Get notified by email if this item is updated
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="download-item__right flex-shrink-0 d-inline-flex flex-column gap-2 align-items-center">
-                      <button type="button" className="btn btn-main pill px-4">
-                        Download{" "}
-                        <span className="icon-right icon ms-0">
-                          {" "}
-                          <i className="las la-download" />
-                        </span>
-                      </button>
-                      <div className="bg-white py-1 px-2 rounded d-inline-block">
-                        <ul className="star-rating justify-content-center">
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="download-item flx-between gap-3">
-                    <div className="download-item__content flx-align flex-nowrap gap-3 flex-grow-1">
-                      <div className="download-item__thumb flex-shrink-0">
-                        <img src="assets/images/thumbs/rejected2.png" alt="" />
-                      </div>
-                      <div className="download-item__info">
-                        <h6 className="download-item__title mb-1">
-                          <Link to="#" className="link">
-                            FixTurbo - Car Repairing HTML Template
-                          </Link>
-                        </h6>
-                        <Link
-                          to="#"
-                          className="download-item__text text-main mb-3 font-12 hover-text-decoration-underline"
-                        >
-                          Tools License
-                        </Link>
-                        <div className="common-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            name="checkbox"
-                            id="notified"
-                          />
-                          <label
-                            className="form-check-label text-body fw-400 mb-0"
-                            htmlFor="notified"
-                          >
-                            Get notified by email if this item is updated
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="download-item__right flex-shrink-0 d-inline-flex flex-column gap-2 align-items-center">
-                      <button type="button" className="btn btn-main pill px-4">
-                        Download{" "}
-                        <span className="icon-right icon ms-0">
-                          {" "}
-                          <i className="las la-download" />
-                        </span>
-                      </button>
-                      <div className="bg-white py-1 px-2 rounded d-inline-block">
-                        <ul className="star-rating justify-content-center">
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="download-item flx-between gap-3">
-                    <div className="download-item__content flx-align flex-nowrap gap-3 flex-grow-1">
-                      <div className="download-item__thumb flex-shrink-0">
-                        <img src="assets/images/thumbs/rejected1.png" alt="" />
-                      </div>
-                      <div className="download-item__info">
-                        <h6 className="download-item__title mb-1">
-                          <Link to="#" className="link">
-                            CityScape - Real Estate HTML Template
-                          </Link>
-                        </h6>
-                        <Link
-                          to="#"
-                          className="download-item__text text-main mb-3 font-12 hover-text-decoration-underline"
-                        >
-                          Tools License
-                        </Link>
-                        <div className="common-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            name="checkbox"
-                            id="notifiedddd"
-                          />
-                          <label
-                            className="form-check-label text-body fw-400 mb-0"
-                            htmlFor="notifiedddd"
-                          >
-                            Get notified by email if this item is updated
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="download-item__right flex-shrink-0 d-inline-flex flex-column gap-2 align-items-center">
-                      <button type="button" className="btn btn-main pill px-4">
-                        Download{" "}
-                        <span className="icon-right icon ms-0">
-                          {" "}
-                          <i className="las la-download" />
-                        </span>
-                      </button>
-                      <div className="bg-white py-1 px-2 rounded d-inline-block">
-                        <ul className="star-rating justify-content-center">
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="download-item flx-between gap-3">
-                    <div className="download-item__content flx-align flex-nowrap gap-3 flex-grow-1">
-                      <div className="download-item__thumb flex-shrink-0">
-                        <img src="assets/images/thumbs/rejected2.png" alt="" />
-                      </div>
-                      <div className="download-item__info">
-                        <h6 className="download-item__title mb-1">
-                          <Link to="#" className="link">
-                            FixTurbo - Car Repairing HTML Template
-                          </Link>
-                        </h6>
-                        <Link
-                          to="#"
-                          className="download-item__text text-main mb-3 font-12 hover-text-decoration-underline"
-                        >
-                          Tools License
-                        </Link>
-                        <div className="common-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            name="checkbox"
-                            id="notifieds"
-                          />
-                          <label
-                            className="form-check-label text-body fw-400 mb-0"
-                            htmlFor="notifieds"
-                          >
-                            Get notified by email if this item is updated
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="download-item__right flex-shrink-0 d-inline-flex flex-column gap-2 align-items-center">
-                      <button type="button" className="btn btn-main pill px-4">
-                        Download{" "}
-                        <span className="icon-right icon ms-0">
-                          {" "}
-                          <i className="las la-download" />
-                        </span>
-                      </button>
-                      <div className="bg-white py-1 px-2 rounded d-inline-block">
-                        <ul className="star-rating justify-content-center">
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                          <li className="star-rating__item font-14">
-                            <i className="fas fa-star" />
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* ========================= Download Section End ====================== */}
+            {/* ================== Setting Section End ====================== */}
           </div>
         </div>
       </div>

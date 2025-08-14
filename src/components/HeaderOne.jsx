@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 // 👇 desde el service que hicimos
 import {
   isAuthenticated,
@@ -15,6 +15,9 @@ const HeaderOne = () => {
   const [scroll, setScroll] = useState(false);
   const [categorias, setCategorias] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+
+
 
   useEffect(() => {
     (async () => {
@@ -241,28 +244,31 @@ const HeaderOne = () => {
           </nav>
         </div>
       </header>
-      <div className="mega-cats-bar">
-        <div className="container">
-          <div className="mega-cats-head">
-            <span className="title">Explora categorías</span>
-            <a href="/all-product" className="view-all">
-              Ver todas
-            </a>
+      {location.pathname === '/' && (
+        <div className="mega-cats-bar">
+          <div className="container">
+            <div className="mega-cats-head">
+              <span className="title">Explora categorías</span>
+              <a href="/all-product" className="view-all">
+                Ver todas
+              </a>
+            </div>
+            <ul className="mega-cats-grid">
+              {categorias.slice(0, 30).map((cat) => (
+                <li key={cat.id} className="mega-cats-item">
+                  <Link
+                    to={`/all-product?cat=${cat.id}`}
+                    className="mega-cats-link"
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="mega-cats-grid">
-            {categorias.slice(0, 30).map((cat) => (
-              <li key={cat.id} className="mega-cats-item">
-                <Link
-                  to={`/all-product?cat=${cat.id}`}
-                  className="mega-cats-link"
-                >
-                  {cat.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
         </div>
-      </div>
+      )}
+
 
       {/* ==================== Header End Here ==================== */}
 

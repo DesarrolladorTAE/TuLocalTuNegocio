@@ -158,29 +158,99 @@ export function onAuthChange(cb) {
 }
 
 
-//Crear productos por usuario.
-export async function createProduct(data, onProgress) {
-  const fd = new FormData();
+// Crear productos por usuario.
+export async function createProduct(payload, onProgress) {
+  // Si ya viene como FormData desde el componente, lo usamos tal cual.
+  let fd;
+  if (payload instanceof FormData) {
+    fd = payload;
+  } else {
+    // Si viene un objeto plano, construimos el FormData aquí.
+    const data = payload || {};
+    fd = new FormData();
 
-  // helper para no mandar null/undefined/"" en form-data
-  const appendIf = (k, v) => {
-    if (v !== undefined && v !== null && `${v}`.trim() !== "") fd.append(k, v);
-  };
+    // --- helper: append si trae valor útil ---
+    const appendIf = (k, v) => {
+      if (v === undefined || v === null) return;
+      const str = typeof v === "string" ? v.trim() : v;
+      if (str === "" || str === null || str === undefined) return;
+      fd.append(k, v);
+    };
 
-  appendIf("name", data.name);
-  appendIf("description", data.description);
-  appendIf("price", data.price);
-  appendIf("stock", data.stock);
-  appendIf("category_id", data.category_id);
+    // --- campos base ---
+    appendIf("name", data.name);
+    appendIf("description", data.description);
+    appendIf("price", data.price);
+    appendIf("stock", data.stock);
+    appendIf("category_id", data.category_id);
 
-  // imágenes (hasta 10)
-  if (data.images) {
-    const arr = Array.from(data.images); // soporta File[] o FileList
-    arr.slice(0, 10).forEach((file) => fd.append("images[]", file));
+    // --- imágenes (hasta 10) ---
+    if (data.images) {
+      const arr = Array.from(data.images); // soporta FileList o File[]
+      arr.slice(0, 10).forEach((file) => fd.append("images[]", file));
+    }
+
+    // --- direcciones por ID ---
+    appendIf("address_id", data.address_id);
+    if (Array.isArray(data.address_ids)) {
+      data.address_ids
+        .filter((v) => v !== null && v !== undefined && String(v).trim() !== "")
+        .forEach((id) => fd.append("address_ids[]", id));
+    }
+
+    // --- dirección única (address:{...}) ---
+    if (data.address && typeof data.address === "object") {
+      const a = data.address;
+      const keys = [
+        "recipient",
+        "phone",
+        "street",
+        "ext_no",
+        "int_no",
+        "neighborhood",
+        "city",
+        "state",
+        "zip",
+        "references",
+      ];
+      keys.forEach((k) => appendIf(`address[${k}]`, a[k]));
+    }
+
+    // --- varias direcciones nuevas (addresses:[{...}]) ---
+    if (Array.isArray(data.addresses)) {
+      data.addresses.forEach((addr, idx) => {
+        if (!addr || typeof addr !== "object") return;
+        Object.entries(addr).forEach(([k, v]) => {
+          appendIf(`addresses[${idx}][${k}]`, v);
+        });
+      });
+    }
+
+    // --- pivot defaults ---
+    if (data.pivot && typeof data.pivot === "object") {
+      const p = data.pivot;
+      // stock (entero), is_active (booleano), fechas y notas
+      if (p.stock !== "" && p.stock !== undefined && p.stock !== null) {
+        appendIf("pivot[stock]", p.stock);
+      }
+      // normalizar booleanos a 1/0 para el backend
+      if (typeof p.is_active === "boolean") {
+        fd.append("pivot[is_active]", p.is_active ? "1" : "0");
+      } else if (p.is_active !== undefined) {
+        appendIf("pivot[is_active]", p.is_active);
+      }
+      appendIf("pivot[available_from]", p.available_from);
+      appendIf("pivot[available_to]", p.available_to);
+      appendIf("pivot[notes]", p.notes);
+    }
   }
 
-  // Nota: content-type multipart/form-data lo pone el navegador automáticamente
   const res = await axiosClient.post("producto", fd, {
+    headers: {
+      // El navegador pone el boundary automáticamente al mandar FormData,
+      // pero este header explícito ayuda a algunos servers/proxies.
+      "Content-Type": "multipart/form-data",
+    },
     onUploadProgress: (e) => {
       if (!onProgress) return;
       const percent = e.total ? Math.round((e.loaded * 100) / e.total) : undefined;
