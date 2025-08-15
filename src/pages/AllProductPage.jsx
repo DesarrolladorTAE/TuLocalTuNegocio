@@ -18,9 +18,6 @@ const AllProductPage = () => {
       {/* HeaderOne */}
       <HeaderOne />
 
-      {/* Breadcrumb */}
-      <Breadcrumb />
-
       {/* AllProduct */}
       <AllProduct />
 
@@ -29,7 +26,8 @@ const AllProductPage = () => {
         <ResourceOne />
       </div> */}
 
-
+      {/* Breadcrumb */}
+      <Breadcrumb />
       {/* BrandSectionOne */}
 
       {/* <BrandSectionOne /> */}

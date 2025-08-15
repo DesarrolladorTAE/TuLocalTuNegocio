@@ -264,6 +264,7 @@ export async function createProduct(payload, onProgress) {
 //Categorias
 export async function fetchCategorias() {
   const { data } = await axiosClient.get("categorias"); // baseURL ya está en axiosClient
+  localStorage.setItem('categorias', JSON.stringify(data))
   return data; // array de categorías
 }
 

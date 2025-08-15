@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 
 import Preloader from "../helper/Preloader";
 import HeaderOne from "../components/HeaderOne";
-import BrandSectionOne from "../components/BrandSectionOne";
+
 import FooterOne from "../components/FooterOne";
 import BreadcrumbThree from "../components/BreadcrumbThree";
 import Profile from "../components/Profile";
@@ -77,9 +77,11 @@ const ProfilePage = () => {
       />
 
       <Profile
-        user={person}
+        entity={person}
         mode={isVendorView ? "vendor" : "me"}
-        products={isVendorView ? products : undefined}
+        products={products}
+        isVendorView={isVendorView}
+        categorias={JSON.parse(localStorage.getItem('categorias'))}
       />
 
       {error && (

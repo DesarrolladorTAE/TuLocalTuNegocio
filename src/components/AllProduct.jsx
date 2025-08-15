@@ -189,13 +189,31 @@ const AllProduct = () => {
 
   return (
     <section
-      className={`all-product padding-y-120 ${
-        activeButton === "list-view" ? "list-view" : ""
-      }`}
+      className={`all-product padding-y-10 ${activeButton === "list-view" ? "list-view" : ""
+        }`}
     >
       <div className="container container-two">
         <div className="row">
           <div className="col-lg-12">
+            <div className="filter-form pb-4 d-block">
+              <form className="d-block" onSubmit={(e) => e.preventDefault()}>
+                <div className="search-box d-flex">
+                  <input
+                    type="text"
+                    className="common-input common-input--lg pill shadow-sm"
+                    placeholder="Buscar productos..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="btn btn-main btn-icon icon border-0"
+                  >
+                    <img src="assets/images/icons/search.svg" alt="" />
+                  </button>
+                </div>
+              </form>
+            </div>
             <div className="filter-tab gap-3 flx-between">
               <button
                 type="button"
@@ -228,9 +246,8 @@ const AllProduct = () => {
                   <li className="nav-item" role="presentation" key={cat.id}>
                     <button
                       key={cat.id}
-                      className={`nav-link ${
-                        activeCat === cat.id ? "active" : ""
-                      }`}
+                      className={`nav-link ${activeCat === cat.id ? "active" : ""
+                        }`}
                       type="button"
                       onClick={() => {
                         setActiveCat(cat.id);
@@ -244,17 +261,15 @@ const AllProduct = () => {
               </ul>
               <div className="list-grid d-flex align-items-center gap-2">
                 <button
-                  className={`list-grid__button list-button d-sm-flex d-none text-body ${
-                    activeButton === "list-view" ? "active" : ""
-                  }`}
+                  className={`list-grid__button list-button d-sm-flex d-none text-body ${activeButton === "list-view" ? "active" : ""
+                    }`}
                   onClick={() => handleClick("list-view")}
                 >
                   <i className="las la-list" />
                 </button>
                 <button
-                  className={`list-grid__button grid-button d-sm-flex d-none  text-body ${
-                    activeButton === "grid-view" ? "active" : ""
-                  }`}
+                  className={`list-grid__button grid-button d-sm-flex d-none  text-body ${activeButton === "grid-view" ? "active" : ""
+                    }`}
                   onClick={() => handleClick("grid-view")}
                 >
                   <i className="las la-border-all" />
@@ -267,25 +282,7 @@ const AllProduct = () => {
                 </button>
               </div>
             </div>
-            <div className="filter-form pb-4 d-block">
-              <form className="d-block" onSubmit={(e) => e.preventDefault()}>
-                <div className="search-box d-flex">
-                  <input
-                    type="text"
-                    className="common-input common-input--lg pill shadow-sm"
-                    placeholder="Buscar productos..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-main btn-icon icon border-0"
-                  >
-                    <img src="assets/images/icons/search.svg" alt="" />
-                  </button>
-                </div>
-              </form>
-            </div>
+
           </div>
           <div className="col-xl-3 col-lg-4">
             {/* ===================== Filter Sidebar Start ============================= */}
@@ -308,9 +305,8 @@ const AllProduct = () => {
                 >
                   <span>Categorias</span>
                   <span
-                    className={`ms-auto transition ${
-                      openCats ? "rotate-180" : ""
-                    }`}
+                    className={`ms-auto transition ${openCats ? "rotate-180" : ""
+                      }`}
                   >
                     <i className="las la-angle-down" />
                   </span>
@@ -331,9 +327,8 @@ const AllProduct = () => {
                           setActiveCat(null);
                           loadAll(); /* setCatParamSilently(null) opcional */
                         }}
-                        className={`filter-sidebar-list__text btn-reset ${
-                          activeCat === null ? "active" : ""
-                        }`}
+                        className={`filter-sidebar-list__text btn-reset ${activeCat === null ? "active" : ""
+                          }`}
                         aria-pressed={activeCat === null}
                       >
                         Todas las Categorias
@@ -352,9 +347,8 @@ const AllProduct = () => {
                               cat.id
                             ); /* setCatParamSilently(cat.id) opcional */
                           }}
-                          className={`filter-sidebar-list__text btn-reset ${
-                            activeCat === cat.id ? "active" : ""
-                          }`}
+                          className={`filter-sidebar-list__text btn-reset ${activeCat === cat.id ? "active" : ""
+                            }`}
                           aria-pressed={activeCat === cat.id}
                         >
                           {cat.name}

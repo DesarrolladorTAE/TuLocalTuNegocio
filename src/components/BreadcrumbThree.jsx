@@ -20,11 +20,8 @@ const BreadcrumbThree = ({
   isVendorView = false,
   onUpdated,
 }) => {
-  const nameFromLS = (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "null")?.name; } catch { return null; }
-  })();
 
-  const [localName, setLocalName] = useState(entity?.name ?? nameFromLS ?? "Usuario");
+  const [localName, setLocalName] = useState(entity?.name);
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
 
@@ -44,6 +41,7 @@ const BreadcrumbThree = ({
   const bust = (url) => (url ? `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}` : url);
 
   useEffect(() => {
+    // console.log('entety: ', entu)
     // cuando cambie el entity (p. ej. al entrar), muestra el avatar actual
     if (entity?.avatar_url) {
       setAvatarUrl(bust(entity.avatar_url));
@@ -59,6 +57,10 @@ const BreadcrumbThree = ({
       if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     };
   }, [avatarPreviewUrl]);
+
+  useEffect(() => {
+    setLocalName(entity.name)
+  }, [entity]);
 
   const triggerAvatar = () => fileRef.current?.click();
 
@@ -84,7 +86,7 @@ const BreadcrumbThree = ({
       // 4) Propaga al padre y persiste en localStorage
       const merged = { ...(entity || {}), ...u, avatar_url: nextUrl };
       onUpdated?.(merged);
-      try { localStorage.setItem("user", JSON.stringify(merged)); } catch {}
+      try { localStorage.setItem("user", JSON.stringify(merged)); } catch { }
     } catch (err) {
       console.error(err);
       alertaError(err.message || "No se pudo actualizar el avatar.");
@@ -111,7 +113,7 @@ const BreadcrumbThree = ({
       // sincroniza entidad y cache local
       const merged = { ...(entity || {}), ...u };
       onUpdated?.(merged);
-      try { localStorage.setItem("user", JSON.stringify(merged)); } catch {}
+      try { localStorage.setItem("user", JSON.stringify(merged)); } catch { }
 
       setEditingName(false);
     } catch (err) {
@@ -159,7 +161,7 @@ const BreadcrumbThree = ({
                   <div className="author-profile__thumb" style={{ position: "relative" }}>
                     <img
                       // si hay preview local úsala; si no, la URL del backend
-                       key={avatarUrl}   
+                      key={avatarUrl}
                       src={avatarPreviewUrl || avatarUrl || defaultAvatar}
                       alt={entity?.name || "avatar"}
                       className="author-profile__img"

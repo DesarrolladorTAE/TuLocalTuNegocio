@@ -4,7 +4,7 @@ import Preloader from "../helper/Preloader";
 import HeaderOne from "../components/HeaderOne";
 import BannerOne from "../components/BannerOne";
 import PopularOne from "../components/PopularOne";
-// import ArrivalOne from "../components/ArrivalOne";
+import ArrivalOne from "../components/ArrivalOne";
 // import FeaturedOne from "../components/FeaturedOne";
 // import SellingOne from "../components/SellingOne";
 // import FeaturedAuthor from "../components/FeaturedAuthor";
@@ -34,7 +34,7 @@ const HomePage = () => {
     <PopularOne />
 
     {/* ArrivalOne */}
-    {/* <ArrivalOne /> */}
+    <ArrivalOne />
 
     {/* FeaturedOne */}
     {/* <FeaturedOne  */}

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+// import Snackbar from "@mui/material/Snackbar";
+// import Alert from "@mui/material/Alert";
 
 const Preloader = () => {
   const [active, setActive] = useState(true);
-  const [sessionExpired, setSessionExpired] = useState(false);
+  // const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     // Simula la verificación del token en localStorage
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
     // if (!token) {
     //   setSessionExpired(true);
     //   setTimeout(() => {
@@ -20,7 +20,7 @@ const Preloader = () => {
     }, 500);
   }, []);
 
-  const [countdown, setCountdown] = useState(3);
+  // const [countdown, setCountdown] = useState(3);
 
   // useEffect(() => {
   //   if (sessionExpired) {
@@ -43,7 +43,7 @@ const Preloader = () => {
       ) : (
         <div></div>
       )}
-      <Snackbar
+      {/* <Snackbar
         open={sessionExpired}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         autoHideDuration={6000}
@@ -51,7 +51,7 @@ const Preloader = () => {
         <Alert severity="error" sx={{ width: "100%" }}>
           La sesión ha expirado. Serás redirigido al login en {countdown} segundos.
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
     </>
   );
 };
