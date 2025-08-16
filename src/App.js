@@ -13,6 +13,7 @@ import CartThankYouPage from "./pages/CartThankYouPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardProfilePage from "./pages/DashboardProfilePage";
 import FollowerPage from "./pages/FollowerPage";
+import CategoriasPage from "./pages/CategoriasPage";
 import VendorProductsPage from "./components/ListarProductosAdmin.jsx";
 import ProductEditModal from "./components/ProductEditModal.jsx";
 import FollowingPage from "./pages/FollowingPage";
@@ -57,6 +58,7 @@ function App() {
           element={<DashboardProfilePage />}
         />
         <Route exact path="/follower" element={<FollowerPage />} />
+        <Route exact path="/adminCategorias" element={<CategoriasPage />} />
         <Route path="/vendedor/:id/products" element={<VendorProductsPage />} />
         <Route exact path="/ProductEditModal" element={<ProductEditModal />} />
         <Route exact path="/following" element={<FollowingPage />} />

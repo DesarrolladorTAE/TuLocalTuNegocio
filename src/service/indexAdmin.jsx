@@ -482,7 +482,7 @@ export async function refreshProdAdmin(vendedorID) {
 export async function subirBanner(data) {
   const token = localStorage.getItem("token"); // Ajusta según dónde guardes el token
   try {
-    const res = await axiosClient.post("subir/banner", data , {
+    const res = await axiosClient.post("subir/banner", data, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
@@ -493,4 +493,36 @@ export async function subirBanner(data) {
     // Re-lanza el error para manejarlo en el componente
     throw error?.response?.data || error;
   }
+}
+
+export async function crearCategoria(formData) {
+  const res = await axiosClient.post("categorias", formData, {
+    headers: {
+      // dejar que el browser ponga el boundary:
+      "Content-Type": "multipart/form-data",
+      // Authorization ya lo agrega el interceptor (si lo tienes allí)
+    },
+  });
+  return res.data;
+}
+
+export async function actualizarCategoria(formData) {
+  const res = await axiosClient.post("categorias/actualizar", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+}
+
+export async function eliminarCategoria(body) {
+  const token = localStorage.getItem("token");
+  // Enviar JSON simple { id }
+  const res = await axiosClient.post("categorias/eliminar", body, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return res.data;
 }

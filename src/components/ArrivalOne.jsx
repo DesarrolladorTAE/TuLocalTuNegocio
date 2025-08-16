@@ -111,7 +111,7 @@ export default function ArrivalOne() {
 
       <div className="container container-two">
         <div className="section-heading">
-          <h3 className="section-heading__title">New Arrival Products</h3>
+          <h3 className="section-heading__title">Productos recién agregados</h3>
         </div>
 
         {/* ===== Tabs de categorías ===== */}

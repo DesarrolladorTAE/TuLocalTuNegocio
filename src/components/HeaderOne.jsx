@@ -107,10 +107,18 @@ const HeaderOne = () => {
             {/* Logo Start */}
             <div className="logo">
               <Link to="/" className="link white-version">
-                <img src="/assets/images/logo/logo.png" alt="Logo" />
+                <img
+                  src="/assets/images/logo/logo.png"
+                  alt="Logo"
+                  style={{ height: "100px", width: "auto" }}
+                />
               </Link>
               <Link to="/" className="link dark-version">
-                <img src="/assets/images/logo/white-logo-two.png" alt="Logo" />
+                <img
+                  src="/assets/images/logo/white-logo-two.png"
+                  alt="Logo"
+                  style={{ height: "100px", width: "auto" }}
+                />
               </Link>
             </div>
             {/* Logo End  */}

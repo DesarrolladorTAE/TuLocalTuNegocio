@@ -91,12 +91,13 @@ const PopularOne = () => {
         // Normaliza mínimamente lo que necesitamos
         const normalized = Array.isArray(data)
           ? data.map((c) => ({
-              id: c.id ?? c._id ?? Math.random().toString(36).slice(2),
-              name: c.name || c.title || "Sin nombre",
-              slug: c.slug || (c.name ? c.name.toLowerCase().replace(/\s+/g, "-") : "categoria"),
-              imageSrc: getCatImage(c),
-              qty: c.products_count ?? c.qty ?? null, // si algún día viene el conteo
-            }))
+            id: c.id ?? c._id ?? Math.random().toString(36).slice(2),
+            name: c.name || c.title || "Sin nombre",
+            slug: c.slug || (c.name ? c.name.toLowerCase().replace(/\s+/g, "-") : "categoria"),
+            imageSrc: getCatImage(c),
+            qty: c.products_count ?? c.qty ?? null, // si algún día viene el conteo
+            updated_at: c.updated_at, // si algún día viene el conteo
+          }))
           : [];
 
         setCats(normalized);
@@ -137,7 +138,11 @@ const PopularOne = () => {
       </section>
     );
   }
-
+  const bust = (url, version) => {
+    if (!url) return "";
+    const v = version ? new Date(version).getTime() : Date.now();
+    return `${url}${url.includes("?") ? "&" : "?"}v=${v}`;
+  };
   return (
     <section className="popular padding-y-120 overflow-hidden">
       <div className="container container-two">
@@ -150,11 +155,13 @@ const PopularOne = () => {
             {cats.map((cat) => (
               <div key={cat.id}>
                 <Link
-                  to={`/all-product?cat=${encodeURIComponent(cat.slug)}`}
+                  to={`/all-product?cat=${encodeURIComponent(cat.id)}`}
                   className="popular-item w-100"
                 >
                   <span className="popular-item__icon">
-                    <img src={cat.imageSrc} alt={cat.name} />
+                    <img
+                      src={bust(cat.imageSrc, cat.updated_at)}
+                      alt={cat.name} />
                   </span>
                   <h6 className="popular-item__title font-18">{cat.name}</h6>
                   {cat.qty !== null ? (
