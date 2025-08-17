@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import MoreItems from "./MoreItems"; // ajusta la ruta si aplica
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const money = (v) => {
   const n = Number(v ?? 0);
@@ -8,16 +10,6 @@ const money = (v) => {
     style: "currency",
     currency: "MXN",
     maximumFractionDigits: 2,
-  });
-};
-
-const niceDate = (iso) => {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-MX", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
   });
 };
 
@@ -47,6 +39,8 @@ const ProductDetails = ({ product }) => {
 
   const [idx, setIdx] = useState(0);
   const total = imgs.length;
+  const [mensaje, setMensaje] = useState("");
+
 
   useEffect(() => {
     setIdx(0); // reset al cambiar de producto
@@ -76,6 +70,19 @@ const ProductDetails = ({ product }) => {
 
   const vendor = product.vendor || {};
   const category = product.category || {};
+
+  const handleEnviar = (e) => {
+    e.preventDefault();
+    if (!mensaje.trim()) return;
+
+    // Sanitizar mensaje para URL
+    const textoCodificado = encodeURIComponent(mensaje);
+    // Asegúrate de que phone incluya código de país (ej. 52 para México)
+    const enlace = `https://wa.me/${vendor.phone}?text=${textoCodificado}`;
+
+    window.open(enlace, "_blank");
+  };
+
 
   return (
     <div className="product-details mt-32 padding-b-120">
@@ -172,9 +179,11 @@ const ProductDetails = ({ product }) => {
                 </div>
 
                 <h1 className="mt-4">{product.name}</h1>
-                <p className="product-details__desc">
-                  {product.description || "Sin descripción."}
-                </p>
+                <div className="mb-0 markdown-body" style={{ flex: 1 }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {product.description}
+                  </ReactMarkdown>
+                </div>
 
                 <div className="product-details__item">
                   <h5 className="product-details__title mb-3">Detalles del producto</h5>
@@ -186,38 +195,48 @@ const ProductDetails = ({ product }) => {
                 </div>
 
                 {category?.image_url && (
-                  <div className="product-details__item">
-                    <h5 className="product-details__title mb-3">Categoría</h5>
-                    <div className="d-flex align-items-center gap-3">
-                      <img
-                        src={category.image_url}
-                        alt={category.name}
-                        style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }}
-                      />
-                      <div>
-                        <div className="fw-600">{category.name}</div>
-                        <div className="text-body">{category.slug}</div>
+                  <Link
+                    to={`/all-product?cat=${category.id}`}
+                    className=""
+                  >
+                    <div className="product-details__item">
+                      <h5 className="product-details__title mb-3">Categoría</h5>
+                      <div className="d-flex align-items-center gap-3">
+                        <img
+                          src={category.image_url}
+                          alt={category.name}
+                          style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }}
+                        />
+                        <div>
+                          <div className="fw-600">{category.name}</div>
+                          <div className="text-body">{category.slug}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 )}
 
                 {vendor?.id && (
-                  <div className="product-details__item">
-                    <h5 className="product-details__title mb-3">Vendedor</h5>
-                    <div className="d-flex align-items-center gap-3">
-                      <img
-                        src={vendor.avatar_url || "/assets/images/thumbs/author-details-img.png"}
-                        alt={vendor.name}
-                        style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%" }}
-                      />
-                      <div>
-                        <div className="fw-600">{vendor.name}</div>
-                        <div className="text-body">{vendor.email}</div>
-                        {vendor.phone && <div className="text-body">{vendor.phone}</div>}
+                  <Link
+                    to={`/vendor/${vendor.id}`}
+                    className=""
+                  >
+                    <div className="product-details__item">
+                      <h5 className="product-details__title mb-3">Vendedor</h5>
+                      <div className="d-flex align-items-center gap-3">
+                        <img
+                          src={vendor.avatar_url || "/assets/images/thumbs/author-details-img.png"}
+                          alt={vendor.name}
+                          style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%" }}
+                        />
+                        <div>
+                          <div className="fw-600">{vendor.name}</div>
+                          <div className="text-body">{vendor.email}</div>
+                          {vendor.phone && <div className="text-body">{vendor.phone}</div>}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 )}
 
                 <MoreItems vendorId={vendor?.id} currentProductId={product.id} />
@@ -248,10 +267,10 @@ const ProductDetails = ({ product }) => {
                 </li>
               </ul>
 
-              <button type="button" className="btn btn-main d-flex w-100 justify-content-center align-items-center gap-2 pill px-sm-5 mt-32">
+              {/* <button type="button" className="btn btn-main d-flex w-100 justify-content-center align-items-center gap-2 pill px-sm-5 mt-32">
                 <img src="/assets/images/icons/add-to-cart.svg" alt="" />
                 Agregar al carrito
-              </button>
+              </button> */}
 
               {vendor?.id && (
                 <div className="author-details mt-4">
@@ -278,19 +297,51 @@ const ProductDetails = ({ product }) => {
                       </span>
                     </div>
                   </div>
-                  <Link to="#" className="btn btn-outline-light w-100 pill mt-32">Ver perfil del vendedor</Link>
+                  <Link to={`/vendor/${vendor.id}`} className="btn btn-outline-light w-100 pill mt-32">Ver perfil del vendedor</Link>
                 </div>
               )}
 
               <ul className="meta-attribute mt-4">
                 <li className="meta-attribute__item">
-                  <span className="name">Última actualización</span>
-                  <span className="details">{niceDate(product.updated_at)}</span>
+                  <span className="name">Télefono</span>
+                  <span className="details">
+                    <a href={"tel:" + vendor.phone}>
+                      {vendor.phone}
+                    </a>
+                  </span>
                 </li>
                 <li className="meta-attribute__item">
-                  <span className="name">Publicado</span>
-                  <span className="details">{niceDate(product.created_at)}</span>
+                  <span className="name">Correo</span>
+                  <span className="details">
+                    <a href={"mailto:" + vendor.email}> {vendor.email}</a>
+                  </span>
                 </li>
+                {/* ========================== Profile Sidebar Start =========================== */}
+                <div className="author-details">
+                  <div className="">
+                    <h5 className="">Enviar WhatsApp</h5>
+                    <form onSubmit={handleEnviar}>
+                      <div className="row gy-4">
+                        <div className="col-12">
+                          <textarea
+                            className="common-input radius-8"
+                            placeholder="Escribe tu mensaje..."
+                            value={mensaje}
+                            onChange={(e) => setMensaje(e.target.value)}
+                          />
+                        </div>
+                        <div className="col-12">
+                          <button
+                            type="submit"
+                            className="btn btn-main btn-md w-100"
+                          >
+                            Enviar
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
               </ul>
             </div>
           </div>

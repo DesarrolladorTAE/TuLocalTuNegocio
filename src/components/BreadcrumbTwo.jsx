@@ -5,11 +5,11 @@ const BreadcrumbTwo = ({ product }) => {
     const categoryId = product?.category?.id;
     const productName = product?.name || "-";
     const vendorName = product?.vendor?.name || "-";
-    const price = typeof product?.price !== "undefined"
-        ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(product.price || 0))
-        : "-";
+    // const price = typeof product?.price !== "undefined"
+    //     ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(product.price || 0))
+    //     : "-";
     const stock = typeof product?.stock !== "undefined" ? `${product.stock} piezas existentes` : "-";
-    const description = product?.description || "Sin descripción.";
+    // const description = product?.description || "Sin descripción.";
 
     return (
         <section className="breadcrumb border-bottom p-0 d-block section-bg position-relative z-index-1">
@@ -71,7 +71,7 @@ const BreadcrumbTwo = ({ product }) => {
                                     <div className="breadcrumb-content__item text-heading fw-500 flx-align gap-2">
                                         <span className="text">
                                             Por{" "}
-                                            <Link to="#" className="link text-main fw-600">
+                                            <Link to={`/vendor/${product.vendor.id}`} className="link text-main fw-600">
                                                 {vendorName}
                                             </Link>
                                         </span>
@@ -153,7 +153,7 @@ const BreadcrumbTwo = ({ product }) => {
                                 aria-selected="true"
                             >
                                 Detalles del Producto
-                                
+
                             </button>
                         </li>
 

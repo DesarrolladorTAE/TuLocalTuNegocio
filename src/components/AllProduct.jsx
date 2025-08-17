@@ -7,7 +7,7 @@ import {
 } from "../service";
 
 const AllProduct = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  // const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeButton, setActiveButton] = useState("grid-view");
   const [filter, setFilter] = useState(false);
@@ -56,14 +56,16 @@ const AllProduct = () => {
   };
   // ===== Cargar según ?cat= =====
   // ⬇️ lee ?cat= solo una vez al montar
+  const catParam = new URLSearchParams(window.location.search).get("cat");
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const catParam = new URLSearchParams(window.location.search).get("cat");
         if (catParam) {
           const id = Number(catParam);
           const list = await productsByCategory(id);
+          console.log('list: ', list)
           if (!cancelled) {
             setActiveCat(id);
             setProductosRaw(list);
@@ -87,8 +89,8 @@ const AllProduct = () => {
   }, []); // ⬅️ Ojo: arreglo de deps vacío (solo una vez)
 
   // ===== helpers para cambiar la URL (y así disparar el useEffect) =====
-  const goAll = () => setSearchParams({}); // /all-product
-  const goCat = (id) => setSearchParams({ cat: String(id) }); // /all-product?cat=ID
+  // const goAll = () => setSearchParams({}); // /all-product
+  // const goCat = (id) => setSearchParams({ cat: String(id) }); // /all-product?cat=ID
 
   // Si usas filtro por categoría:
   const loadAll = async () => {
@@ -391,13 +393,13 @@ const AllProduct = () => {
                               loading="lazy"
                             />
                           </Link>
-                          <button
+                          {/* <button
                             type="button"
                             className="product-item__wishlist"
                             aria-label="Agregar a wishlist"
                           >
                             <i className="fas fa-heart" />
-                          </button>
+                          </button> */}
                         </div>
 
                         <div className="product-item__content">

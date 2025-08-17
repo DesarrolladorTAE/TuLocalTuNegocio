@@ -42,11 +42,12 @@ const ProfilePage = () => {
           setPerson(res?.vendor ?? null);
           setProducts(Array.isArray(res?.products) ? res.products : []);
         } else {
+          let user = JSON.parse(localStorage.getItem('user'))
           // primero pinta caché (ya lo hicimos al iniciar el state)
-          const me = await getMe({ cache: true });
+          const me = await productosPorVendedor(user.id);
           if (cancel) return;
           setPerson(me);
-          setProducts([]);
+          setProducts(me.products);
         }
       } catch (e) {
         if (!cancel) {
