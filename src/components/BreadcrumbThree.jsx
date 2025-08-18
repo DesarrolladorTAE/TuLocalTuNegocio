@@ -21,7 +21,7 @@ const BreadcrumbThree = ({
   onUpdated,
 }) => {
 
-  const [localName, setLocalName] = useState(entity?.name);
+  const [localName, setLocalName] = useState();
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
 
@@ -60,7 +60,8 @@ const BreadcrumbThree = ({
 
   useEffect(() => {
     setLocalName(entity.name)
-  }, [entity]);
+    console.log('nombre: ', entity.name)
+  }, []);
 
   const triggerAvatar = () => fileRef.current?.click();
 

@@ -79,17 +79,34 @@ export async function login(credentials, { remember = true } = {}) {
 }
 
 //Registro Normal
-export function register(userData) {
+// service/index.js (o donde lo tengas)
+// Registro Normal (con token guardado)
+export async function register(userData, { remember = true } = {}) {
   try {
-    return axiosClient.post("registrar", userData);
+    // si tu backend valida "accepted", asegúrate de mandar boolean
+    const payload = {
+      ...userData,
+      terminos_aceptados: !!userData.terminos_aceptados,
+    };
+
+    const { data } = await axiosClient.post("registrar", payload);
+    // si devuelve token/usuario, guárdalos
+    if (data?.token && data?.user) {
+      saveAuth({ token: data.token, user: data.user }, remember);
+    }
+    return data;
   } catch (err) {
+    // re-lanza para que el componente pinte errores campo a campo
     throw err;
   }
 }
 
 // Redirige al backend para autenticación con Google
 export function registerWithGoogle() {
-  window.location.href = `${API_URL}/auth/google/redirect`;
+  clearAuth(); // opcional pero útil al testear
+  const returnUrl = `${window.location.origin}/oauth/callback`;
+  const url = `${API_URL}/auth/google/redirect?redirect=${encodeURIComponent(returnUrl)}&ts=${Date.now()}`;
+  window.location.href = url;
 }
 
 // Cuando el backend redirige al FRONT con los datos
@@ -111,43 +128,76 @@ export function loginWithGoogle() {
 }
 
 // Google: manejar callback ?token=...&user=base64(json)
-export function handleOAuthCallbackFromURL() {
+export function handleOAuthCallbackFromURL({ defaultRedirect = "/", persist } = {}) {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   const userB64 = params.get("user");
-  if (!token || !userB64) return false;
+  const next = params.get("next");        // opcional: /dashboard, /pos, etc.
+  const remember = persist ?? (params.get("remember") !== "0"); // por defecto true
+
+  if (!token || !userB64) {
+    // Limpia la URL ruidosa aunque falle
+    try { window.history.replaceState({}, "", "/login"); } catch { }
+    return false;
+  }
 
   try {
-    // base64 urlsafe → estándar
-    const b64 = userB64.replace(/-/g, "+").replace(/_/g, "/").padEnd(
-      Math.ceil(userB64.length / 4) * 4, "="
-    );
+    // base64-url => base64 estándar con padding
+    const padded = userB64.replace(/-/g, "+").replace(/_/g, "/")
+      .padEnd(Math.ceil(userB64.length / 4) * 4, "=");
 
-    // Decodifica (compat UTF-8)
-    const json = decodeURIComponent(escape(window.atob(b64)));
-    const user = JSON.parse(json);
+    const bin = atob(padded);
 
-    // Guarda token + user (persistente)
-    saveAuth({ token, user }, true);
+    // UTF-8 safe: intenta TextDecoder, si no, fallback a escape()
+    let user;
+    try {
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      user = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+    } catch {
+      const json = decodeURIComponent(escape(bin));
+      user = JSON.parse(json);
+    }
+
+    // ✅ guarda exactamente como quieres (persistente en localStorage)
+    saveAuth({ token, user }, remember);
+
+    // ✅ setea Authorization global
+    if (axiosClient?.defaults) {
+      axiosClient.defaults.headers.common.Authorization = `Bearer ${token}`;
+    }
+
+    // ✅ limpia querystring por seguridad
+    const target = next || defaultRedirect;
+    try { window.history.replaceState({}, "", target); } catch { }
+
     return true;
   } catch (e) {
     console.error("Error al procesar callback de Google:", e);
+    try { window.history.replaceState({}, "", "/login"); } catch { }
     return false;
   }
 }
 
 
 export async function logout() {
-  try {
-    await axiosClient.post("logout", null, {
-      headers: {
-        Authorization: `Bearer ${authState.token}`,
-      },
-    });
-  } catch (err) {
-    console.error("Logout error:", err);
-    throw err
+  if (!authState.token) {
+    try {
+      await axiosClient.post("logout", null, {
+        headers: {
+          Authorization: `Bearer ${authState.token}`,
+        },
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+      // window.location.assign(`${API_URL}/login`);
+      throw err
+    }
+  } else {
+    window.location.href = `/login`;
+
+
   }
+
   clearAuth();
 }
 

@@ -51,8 +51,8 @@ const HeaderOne = () => {
   }, []);
 
   const handleLogout = async () => {
-    await doLogout()
     navigate("/login", { replace: true })
+    doLogout()
   };
 
   useEffect(() => {
