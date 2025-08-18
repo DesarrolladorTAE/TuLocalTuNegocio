@@ -209,107 +209,76 @@ export function onAuthChange(cb) {
 
 
 // Crear productos por usuario.
-export async function createProduct(payload, onProgress) {
-  // Si ya viene como FormData desde el componente, lo usamos tal cual.
-  let fd;
-  if (payload instanceof FormData) {
-    fd = payload;
-  } else {
-    // Si viene un objeto plano, construimos el FormData aquí.
-    const data = payload || {};
-    fd = new FormData();
-
-    // --- helper: append si trae valor útil ---
+// service.js
+export async function createProduct(formData, onProgress) {
+  // Si NO es FormData, construye uno (compatibilidad)
+  let fd = formData instanceof FormData ? formData : (() => {
+    const f = new FormData();
+    const d = formData || {};
     const appendIf = (k, v) => {
-      if (v === undefined || v === null) return;
-      const str = typeof v === "string" ? v.trim() : v;
-      if (str === "" || str === null || str === undefined) return;
-      fd.append(k, v);
+      if (v !== undefined && v !== null && `${v}`.trim() !== "") f.append(k, v);
     };
 
-    // --- campos base ---
-    appendIf("name", data.name);
-    appendIf("description", data.description);
-    appendIf("price", data.price);
-    appendIf("stock", data.stock);
-    appendIf("category_id", data.category_id);
+    appendIf("name", d.name);
+    appendIf("description", d.description);
+    appendIf("price", d.price);
+    appendIf("stock", d.stock);
+    appendIf("category_id", d.category_id);
 
-    // --- imágenes (hasta 10) ---
-    if (data.images) {
-      const arr = Array.from(data.images); // soporta FileList o File[]
-      arr.slice(0, 10).forEach((file) => fd.append("images[]", file));
+    // imágenes
+    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => f.append("images[]", file));
+
+    // localidades existentes
+    (d.selected_address_ids || []).forEach(id => f.append("address_ids[]", id));
+
+    // nueva localidad
+    const a = d.new_address || {};
+    const hasSingle = a.recipient || a.phone || a.street;
+    if (hasSingle) {
+      appendIf("address[recipient]", a.recipient);
+      appendIf("address[phone]", a.phone);
+      appendIf("address[street]", a.street);
+      appendIf("address[ext_no]", a.ext_no);
+      appendIf("address[int_no]", a.int_no);
+      appendIf("address[neighborhood]", a.neighborhood);
+      appendIf("address[city]", a.city);
+      appendIf("address[state]", a.state);
+      appendIf("address[zip]", a.zip);
+      appendIf("address[references]", a.references);
     }
 
-    // --- direcciones por ID ---
-    appendIf("address_id", data.address_id);
-    if (Array.isArray(data.address_ids)) {
-      data.address_ids
-        .filter((v) => v !== null && v !== undefined && String(v).trim() !== "")
-        .forEach((id) => fd.append("address_ids[]", id));
-    }
+    // pivote general
+    const dft = d.pivot_default || {};
+    if (dft.stock !== "") f.append("pivot[stock]", String(dft.stock));
+    f.append("pivot[is_active]", dft.is_active ? "1" : "0");
+    if (dft.available_from) f.append("pivot[available_from]", dft.available_from);
+    if (dft.available_to) f.append("pivot[available_to]", dft.available_to);
+    if (dft.notes) f.append("pivot[notes]", dft.notes);
 
-    // --- dirección única (address:{...}) ---
-    if (data.address && typeof data.address === "object") {
-      const a = data.address;
-      const keys = [
-        "recipient",
-        "phone",
-        "street",
-        "ext_no",
-        "int_no",
-        "neighborhood",
-        "city",
-        "state",
-        "zip",
-        "references",
-      ];
-      keys.forEach((k) => appendIf(`address[${k}]`, a[k]));
-    }
+    // pivotes por sucursal
+    (d.pivots || []).forEach(p => {
+      const base = `pivots[${p.address_id}]`;
+      if (p.stock !== "") f.append(`${base}[stock]`, String(p.stock));
+      f.append(`${base}[is_active]`, p.is_active ? "1" : "0");
+      if (p.available_from) f.append(`${base}[available_from]`, p.available_from);
+      if (p.available_to) f.append(`${base}[available_to]`, p.available_to);
+      if (p.notes) f.append(`${base}[notes]`, p.notes);
+    });
 
-    // --- varias direcciones nuevas (addresses:[{...}]) ---
-    if (Array.isArray(data.addresses)) {
-      data.addresses.forEach((addr, idx) => {
-        if (!addr || typeof addr !== "object") return;
-        Object.entries(addr).forEach(([k, v]) => {
-          appendIf(`addresses[${idx}][${k}]`, v);
-        });
-      });
-    }
-
-    // --- pivot defaults ---
-    if (data.pivot && typeof data.pivot === "object") {
-      const p = data.pivot;
-      // stock (entero), is_active (booleano), fechas y notas
-      if (p.stock !== "" && p.stock !== undefined && p.stock !== null) {
-        appendIf("pivot[stock]", p.stock);
-      }
-      // normalizar booleanos a 1/0 para el backend
-      if (typeof p.is_active === "boolean") {
-        fd.append("pivot[is_active]", p.is_active ? "1" : "0");
-      } else if (p.is_active !== undefined) {
-        appendIf("pivot[is_active]", p.is_active);
-      }
-      appendIf("pivot[available_from]", p.available_from);
-      appendIf("pivot[available_to]", p.available_to);
-      appendIf("pivot[notes]", p.notes);
-    }
-  }
+    return f;
+  })();
 
   const res = await axiosClient.post("producto", fd, {
-    headers: {
-      // El navegador pone el boundary automáticamente al mandar FormData,
-      // pero este header explícito ayuda a algunos servers/proxies.
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (!onProgress) return;
-      const percent = e.total ? Math.round((e.loaded * 100) / e.total) : undefined;
-      onProgress({ loaded: e.loaded, total: e.total, percent });
+      const percent = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
+      onProgress({ percent });
     },
   });
-
-  return res.data; // { message, product, ... }
+  return res.data;
 }
+
 
 //Categorias
 export async function fetchCategorias() {

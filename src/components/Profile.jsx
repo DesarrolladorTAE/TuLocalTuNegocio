@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { createProduct, actualizarUsuario } from "../service";
 import { alertaSuccess, alertaError } from "../utils/alerts";
 import { Link } from "react-router-dom";
@@ -20,11 +20,14 @@ const emptyAddress = {
   references: "",
 };
 
+const MAX_FILES = 10;
+const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+
 // 👇 Componente auxiliar para mostrar un error debajo del campo
 const FieldError = ({ error }) =>
   error ? <small className="text-danger d-block mt-1">{error.message || String(error)}</small> : null;
 
-const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, categorias }) => {
+const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, categorias, onCreated, localidadesExistentes = [] }) => {
   const [activeButton, setActiveButton] = useState("grid-view");
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(null);
@@ -88,6 +91,40 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     notes: "",
   });
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    setError,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      name: "",
+      price: "",
+      stock: "",
+      category_id: "",
+      description: "",
+
+      // LOCALIDADES
+      selected_address_ids: [], // multi-select
+      new_address: { ...emptyAddress },
+
+      // PIVOTE por defecto
+      pivot_default: {
+        stock: "",
+        is_active: true,
+        available_from: "",
+        available_to: "",
+        notes: "",
+      },
+
+      // PIVOTES por localidad (opcional/overrides)
+      pivots: [], // [{address_id, stock, is_active, available_from, available_to, notes}]
+    },
+  });
 
   // ===== Drop Zone =====
   const inputRef = useRef(null);
@@ -105,6 +142,28 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     }
     setFiles(merged);
   };
+  const { fields: pivotFields, append: appendPivot, remove: removePivot } = useFieldArray({
+    control,
+    name: "pivots",
+  });
+
+  const selectedIds = watch("selected_address_ids") || [];
+  // Agrega pivote por cada localidad seleccionada que aún no tenga override
+  const addPivotOverrides = () => {
+    const existing = new Set((pivotFields || []).map((p) => String(p.address_id)));
+    const toAdd = selectedIds.filter((id) => !existing.has(String(id)));
+    toAdd.forEach((id) =>
+      appendPivot({
+        address_id: id,
+        stock: "",
+        is_active: true,
+        available_from: "",
+        available_to: "",
+        notes: "",
+      })
+    );
+  };
+
 
   const onDrop = useCallback(
     (e) => {
@@ -124,32 +183,6 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     e.stopPropagation();
   };
 
-  // ======= react-hook-form =======
-  const {
-    register,
-    handleSubmit: rhfHandleSubmit,
-    setError,
-    setValue,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    defaultValues: {
-      name: "",
-      price: "",
-      stock: "",
-      category_id: "",
-      description: "",
-      address_id: "",
-      pivot: {
-        stock: "",
-        is_active: true,
-        available_from: "",
-        available_to: "",
-        notes: "",
-      },
-    },
-  });
-
   // sincroniza pivot local -> RHF (para que viaje en el submit)
   const syncPivot = (patch) => {
     setPivot((prev) => {
@@ -167,9 +200,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
   // Mapea errores de Laravel 422 -> RHF
   const applyServerErrors = (laravelErrors = {}) => {
     Object.entries(laravelErrors).forEach(([key, msgs]) => {
-      // key puede ser "name", "address.recipient", "address_ids.0", "images.2", "pivot.stock", etc.
       const message = Array.isArray(msgs) ? msgs[0] : String(msgs);
-      // RHF soporta path con dot-notation
       setError(key, { type: "server", message });
     });
   };
@@ -177,29 +208,23 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
   const onSubmit = async (data) => {
     try {
       setProgress(null);
-
       const fd = new FormData();
-
-      // Campos base (desde RHF)
+      // === Producto base ===
       fd.append("name", (data.name || "").trim());
       fd.append("price", data.price);
       fd.append("stock", data.stock);
       if (data.category_id) fd.append("category_id", data.category_id);
       if (data.description) fd.append("description", data.description);
 
-      // Imágenes
+      // === Imágenes ===
       files.forEach((file) => fd.append("images[]", file));
 
-      // IDs de direcciones (mezcla campo suelto + lista controlada por estado)
-      if (data.address_id?.trim()) fd.append("address_id", data.address_id.trim());
-      addressIdsInput
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean)
-        .forEach((val) => fd.append("address_ids[]", val));
+      // === Localidades existentes ===
+      const ids = data.selected_address_ids || [];
+      ids.forEach((id) => fd.append("address_ids[]", id));
 
-      // Dirección única (desde estado controlado existente)
-      const a = addressSingle;
+      // === Nueva localidad (rápida) ===
+      const a = data.new_address || {};
       const hasSingle = a.recipient || a.phone || a.street;
       if (hasSingle) {
         if (a.recipient) fd.append("address[recipient]", a.recipient);
@@ -214,26 +239,33 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
         if (a.references) fd.append("address[references]", a.references);
       }
 
-      // Pivot (desde RHF, sincronizado con estado)
-      if (pivot.stock !== "") fd.append("pivot[stock]", String(pivot.stock));
-      fd.append("pivot[is_active]", pivot.is_active ? "1" : "0");
-      if (pivot.available_from) fd.append("pivot[available_from]", pivot.available_from);
-      if (pivot.available_to) fd.append("pivot[available_to]", pivot.available_to);
-      if (pivot.notes) fd.append("pivot[notes]", pivot.notes);
+      // === Pivote por defecto ===
+      const d = data.pivot_default || {};
+      if (d.stock !== "") fd.append("pivot[stock]", String(d.stock));
+      fd.append("pivot[is_active]", d.is_active ? "1" : "0");
+      if (d.available_from) fd.append("pivot[available_from]", d.available_from);
+      if (d.available_to) fd.append("pivot[available_to]", d.available_to);
+      if (d.notes) fd.append("pivot[notes]", d.notes);
+
+      // === Pivotes por localidad (overrides, opcionales) ===
+      (data.pivots || []).forEach((p, idx) => {
+        const base = `pivots[${p.address_id}]`;
+        if (p.stock !== "") fd.append(`${base}[stock]`, String(p.stock));
+        fd.append(`${base}[is_active]`, p.is_active ? "1" : "0");
+        if (p.available_from) fd.append(`${base}[available_from]`, p.available_from);
+        if (p.available_to) fd.append(`${base}[available_to]`, p.available_to);
+        if (p.notes) fd.append(`${base}[notes]`, p.notes);
+      });
 
       const resp = await createProduct(fd, (p) => {
         if (typeof p?.percent === "number") setProgress(p.percent);
       });
 
       alertaSuccess(resp?.message || "Producto creado");
-
-      // Reset RHF + estados relacionados
       reset();
       setFiles([]);
       setProgress(null);
-      setAddressIdsInput("");
-      setAddressSingle({ ...emptyAddress });
-      setPivot({ stock: "", is_active: true, available_from: "", available_to: "", notes: "" });
+      onCreated?.(resp);
     } catch (err) {
       const errors422 = err?.response?.data?.errors;
       const msg =
@@ -296,6 +328,244 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
 
     window.open(enlace, "_blank");
   };
+
+  // === Helpers de UI ===
+  const opcionesCategorias = useMemo(
+    () =>
+      (categorias || []).map((c) => ({
+        value: String(c.id),
+        label: c.name,
+        image: c.image_url, // <- viene del backend
+      })),
+    [categorias]
+  );
+  const opcionesLocalidades = useMemo(
+    () =>
+      localidadesExistentes.map((l) => ({
+        value: l.id,
+        label: l.label || `#${l.id} — ${l.city || ""}${l.state ? ", " + l.state : ""}`,
+      })),
+    [localidadesExistentes]
+  );
+
+  // 🔹 Localidades únicas deducidas de los productos del vendedor
+  const localidadesUnicas = useMemo(() => {
+    const map = new Map();
+    (products || []).forEach((p) => {
+      (p.locations || []).forEach((loc) => {
+        if (!map.has(loc.id)) {
+          map.set(loc.id, {
+            ...loc,
+            // etiqueta corta para UI
+            label: `${loc.city || ""}${loc.state ? `, ${loc.state}` : ""}`.trim() || `#${loc.id}`,
+            // datos útiles opcionales:
+            hasActiveStock: !!loc?.pivot && loc.pivot.is_active && Number(loc.pivot.stock) > 0,
+          });
+        }
+      });
+    });
+    return Array.from(map.values());
+  }, [products]);
+
+  function CategoryCombobox({ name = "category_id", label = "Categoría" }) {
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState("");
+    const [hoverIndex, setHoverIndex] = useState(-1);
+
+    const selectedValue = watch(name);
+    const selectedOpt = useMemo(
+      () => opcionesCategorias.find((o) => o.value === String(selectedValue)),
+      [selectedValue, opcionesCategorias]
+    );
+
+    const filtered = useMemo(() => {
+      const term = q.trim().toLowerCase();
+      if (!term) return opcionesCategorias;
+      return opcionesCategorias.filter(
+        (o) =>
+          o.label.toLowerCase().includes(term) ||
+          String(o.value).toLowerCase().includes(term)
+      );
+    }, [q, opcionesCategorias]);
+
+    const selectOption = (opt) => {
+      setValue(name, opt?.value || "");
+      console.log('opcion cat: ', opt)
+      setOpen(false);
+      setQ("");
+    };
+
+    const clearSelection = () => {
+      setValue(name, "");
+      setQ("");
+    };
+
+    // teclado dentro del input
+    const onKeyDown = (e) => {
+      if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
+        setOpen(true);
+        return;
+      }
+      if (!open) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHoverIndex((i) => Math.min(i + 1, filtered.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHoverIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const opt = filtered[Math.max(0, hoverIndex)];
+        if (opt) selectOption(opt);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
+
+    useEffect(() => {
+      if (!open) setHoverIndex(-1);
+    }, [open, q]);
+
+    return (
+      <div className="col-sm-6">
+        <label className="form-label">{label}</label>
+
+        {/* Control visible */}
+        <div className="position-relative">
+          <div
+            className="d-flex align-items-center gap-2 common-input common-input--md border--color-dark bg--white"
+            role="combobox"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            onClick={() => setOpen((v) => !v)}
+            style={{ cursor: "text", padding: 6 }}
+          >
+            {/* Miniatura de la selección */}
+            {selectedOpt?.image && (
+              <img
+                src={`${selectedOpt.image}`}
+                alt={selectedOpt.label}
+                width={28}
+                height={28}
+                style={{ objectFit: "cover", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)" }}
+              />
+            )}
+
+            {/* Input de búsqueda */}
+            <input
+              type="text"
+              className="border-0 flex-grow-1"
+              placeholder={selectedOpt ? selectedOpt.label : "Buscar o seleccionar…"}
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                if (!open) setOpen(true);
+              }}
+              onKeyDown={onKeyDown}
+              onFocus={() => setOpen(true)}
+              style={{ outline: "none", background: "transparent" }}
+            />
+
+            {/* Limpiar */}
+            {selectedValue && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-light"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearSelection();
+                }}
+                title="Quitar selección"
+              >
+                <i className="fas fa-times" />
+              </button>
+            )}
+
+            {/* Chevron */}
+            <i className={`ms-auto las la-angle-${open ? "up" : "down"}`} />
+          </div>
+
+          {/* Lista desplegable */}
+          {open && (
+            <ul
+              role="listbox"
+              className="list-group position-absolute w-100 mt-1 shadow-sm"
+              style={{
+                zIndex: 30,
+                maxHeight: 280,
+                overflowY: "auto",
+                borderRadius: 8,
+              }}
+            >
+              {filtered.length === 0 && (
+                <li className="list-group-item small text-muted">Sin resultados…</li>
+              )}
+
+              {filtered.map((opt, idx) => {
+                const active = idx === hoverIndex;
+                const selected = String(selectedValue) === String(opt.value);
+                return (
+                  <li
+                    key={opt.value}
+                    role="option"
+                    aria-selected={selected}
+                    className={`list-group-item d-flex align-items-center gap-2 ${active ? "bg-light" : ""}`}
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={() => setHoverIndex(idx)}
+                    onMouseDown={(e) => {
+                      // evita que el blur cierre antes del click
+                      e.preventDefault();
+                      selectOption(opt);
+                    }}
+                  >
+                    {opt.image && (
+                      <img
+                        src={`${opt.image}`}
+                        alt={opt.label}
+                        width={32}
+                        height={32}
+                        style={{ objectFit: "cover", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)" }}
+                      />
+                    )}
+                    <div className="d-flex flex-column">
+                      <span className="fw-500">{opt.label}</span>
+                      <small className="text-muted">ID: {opt.value}</small>
+                    </div>
+                    {selected && <i className="ms-auto las la-check" />}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Campo real de RHF (oculto) */}
+        <input type="hidden" {...register(name)} />
+
+        <FieldError error={errors?.[name]} />
+        {/* Vista previa opcional */}
+        {selectedOpt && (
+          <div className="mt-2 d-flex align-items-center gap-2">
+            {selectedOpt.image && (
+              <img
+                src={`${selectedOpt.image}`}
+                alt={selectedOpt.label}
+                width={44}
+                height={44}
+                style={{ objectFit: "cover", borderRadius: 8, border: "1px solid rgba(0,0,0,.08)" }}
+              />
+            )}
+            <div>
+              <div className="fw-600">{selectedOpt.label}</div>
+              <small className="text-muted">ID: {selectedOpt.value}</small>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
 
   return (
@@ -443,6 +713,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
             role="tabpanel"
             aria-labelledby="pills-portfolio-tab"
             tabIndex={0}
+
           >
             {/* Profile Portfolio Content Star */}
             {/* Tab Start */}
@@ -543,277 +814,455 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
 
             {/* Profile Portfolio Content End */}
           </div>
-        
-        
+
+
           <div
-            className="tab-pane fade"
-            id="pills-Settingss"
+            className="tab-pane fade"       // 👈 clases correctas
+            id="pills-Settingss"            // 👈 debe coincidir con data-bs-target
             role="tabpanel"
             aria-labelledby="pills-Settingss-tab"
             tabIndex={0}
           >
             {/* ================== Setting Section Start ====================== */}
-            <div className="row gy-4">
+            <div className="filter-tab">
               {/* Columna izquierda: formulario base + imágenes */}
-              <div className="col-lg-8">
+              <div className="col-lg-12">
                 {/* Formulario de producto */}
                 <div className="card common-card border border-gray-five overflow-hidden mb-24" id="nuevoProducto">
                   <div className="card-header">
                     <h6 className="title">Nuevo Producto</h6>
                   </div>
                   <div className="card-body">
-                    <form onSubmit={rhfHandleSubmit(onSubmit)}>
-                      <div className="row gy-3">
-                        {/* Datos base */}
-                        <div className="col-sm-6 col-xs-6">
-                          <label htmlFor="name" className="form-label">Nombre *</label>
-                          <input
-                            type="text"
-                            id="name"
-                            className="common-input common-input--md border--color-dark bg--white"
-                            {...register("name", { required: "El nombre del producto es obligatorio.", maxLength: { value: 255, message: "Máximo 255 caracteres." } })}
-                          />
-                          <FieldError error={errors.name} />
-                        </div>
-
-                        <div className="col-sm-3 col-xs-6">
-                          <label htmlFor="price" className="form-label">Precio *</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            id="price"
-                            className="common-input common-input--md border--color-dark bg--white"
-                            {...register("price", {
-                              required: "El precio es obligatorio.",
-                              valueAsNumber: true,
-                              min: { value: 0, message: "El precio no puede ser negativo." },
-                            })}
-                          />
-                          <FieldError error={errors.price} />
-                        </div>
-
-                        <div className="col-sm-3 col-xs-6">
-                          <label htmlFor="stock" className="form-label">Stock *</label>
-                          <input
-                            type="number"
-                            step="1"
-                            id="stock"
-                            className="common-input common-input--md border--color-dark bg--white"
-                            {...register("stock", {
-                              required: "El stock es obligatorio.",
-                              valueAsNumber: true,
-                              min: { value: 0, message: "El stock no puede ser negativo." },
-                            })}
-                          />
-                          <FieldError error={errors.stock} />
-                        </div>
-
-                        <div className="col-sm-6 col-xs-6">
-                          <label htmlFor="category_id" className="form-label">ID Categoría</label>
-                          <input
-                            type="text"
-                            id="category_id"
-                            className="common-input common-input--md border--color-dark bg--white"
-                            placeholder="Ej. 26"
-                            {...register("category_id", {
-                              validate: (v) => !v || /^\d+$/.test(v) || "Debe ser numérico",
-                            })}
-                          />
-                          <FieldError error={errors.category_id} />
-                        </div>
-
-                        <div className="col-sm-12">
-                          <label htmlFor="description" className="form-label">Descripción</label>
-                          <textarea
-                            id="description"
-                            className="common-input common-input--md border--color-dark bg--white"
-                            placeholder="Describe tu producto"
-                            {...register("description")}
-                          />
-                          <FieldError error={errors.description} />
-                        </div>
-
-                        {/* Direcciones por ID */}
-                        <div className="col-12">
-                          <h6 className="mb-2">Localidades / Direcciones</h6>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                      {/* ================== Datos del producto ================== */}
+                      <div className="card common-card border border-gray-five overflow-hidden mb-24">
+                        <div className="card-header"><h6 className="title">Datos del producto</h6></div>
+                        <div className="card-body">
                           <div className="row g-3">
                             <div className="col-sm-6">
-                              <label className="form-label">address_id (opcional)</label>
+                              <label htmlFor="name" className="form-label">Nombre *</label>
                               <input
+                                id="name"
                                 type="text"
-                                placeholder="Ej. 15"
                                 className="common-input common-input--md border--color-dark bg--white"
-                                {...register("address_id", {
-                                  validate: (v) => !v || /^\d+$/.test(v) || "Debe ser numérico",
+                                placeholder="Ej. Café molido 500g"
+                                {...register("name", {
+                                  required: "El nombre del producto es obligatorio.",
+                                  maxLength: { value: 255, message: "Máximo 255 caracteres." },
                                 })}
                               />
-                              <FieldError error={errors.address_id} />
+                              <FieldError error={errors.name} />
                             </div>
-                            <div className="col-sm-6">
-                              <label className="form-label">address_ids (lista, separados por coma)</label>
+
+                            <div className="col-sm-3">
+                              <label htmlFor="price" className="form-label">Precio *</label>
                               <input
-                                type="text"
-                                value={addressIdsInput}
-                                onChange={(e) => setAddressIdsInput(e.target.value)}
-                                placeholder="Ej. 21, 22, 23"
+                                id="price"
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
                                 className="common-input common-input--md border--color-dark bg--white"
+                                {...register("price", {
+                                  required: "El precio es obligatorio.",
+                                  valueAsNumber: true,
+                                  min: { value: 0, message: "El precio no puede ser negativo." },
+                                })}
                               />
-                              <FieldError error={errors["address_ids"]} />
+                              <FieldError error={errors.price} />
+                            </div>
+
+                            <div className="col-sm-3">
+                              <label htmlFor="stock" className="form-label">Stock inicial *</label>
+                              <input
+                                id="stock"
+                                type="number"
+                                step="1"
+                                placeholder="0"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                {...register("stock", {
+                                  required: "El stock es obligatorio.",
+                                  valueAsNumber: true,
+                                  min: { value: 0, message: "El stock no puede ser negativo." },
+                                })}
+                              />
+                              <FieldError error={errors.stock} />
+                            </div>
+
+
+                            <CategoryCombobox name="category_id" label="Categoría" />
+
+                            <div className="col-12">
+                              <label htmlFor="description" className="form-label">Descripción</label>
+                              <textarea
+                                id="description"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                placeholder="Describe tu producto (ingredientes, uso, cuidados, etc.)"
+                                {...register("description")}
+                              />
+                              <FieldError error={errors.description} />
                             </div>
                           </div>
                         </div>
-
-                        {/* Pivot */}
-                        <div className="col-12">
-                          <div className="mt-3 p-3 border rounded">
-                            <h6 className="mb-2">Configuración por localidad (pivot por defecto)</h6>
-                            <div className="row g-3">
-                              <div className="col-sm-4">
-                                <label className="form-label">pivot.stock</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={pivot.stock}
-                                  onChange={(e) => syncPivot({ stock: e.target.value })}
-                                  className="common-input common-input--md border--color-dark bg--white"
-                                  placeholder="0"
-                                />
-                                <FieldError error={errors?.pivot?.stock} />
-                              </div>
-                              <div className="col-sm-4">
-                                <label className="form-label d-block">pivot.is_active</label>
-                                <div className="form-check form-switch">
-                                  <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    id="pivot_is_active"
-                                    checked={pivot.is_active}
-                                    onChange={(e) => syncPivot({ is_active: e.target.checked })}
-                                  />
-                                  <label htmlFor="pivot_is_active" className="form-check-label">Activo</label>
-                                </div>
-                                <FieldError error={errors?.pivot?.is_active} />
-                              </div>
-                              <div className="col-sm-4">
-                                <label className="form-label">pivot.notes</label>
-                                <input
-                                  type="text"
-                                  value={pivot.notes}
-                                  onChange={(e) => syncPivot({ notes: e.target.value })}
-                                  className="common-input common-input--md border--color-dark bg--white"
-                                  placeholder="Notas opcionales"
-                                />
-                                <FieldError error={errors?.pivot?.notes} />
-                              </div>
-                              <div className="col-sm-6">
-                                <label className="form-label">pivot.available_from</label>
-                                <input
-                                  type="date"
-                                  value={pivot.available_from}
-                                  onChange={(e) => syncPivot({ available_from: e.target.value })}
-                                  className="common-input common-input--md border--color-dark bg--white"
-                                />
-                                <FieldError error={errors?.pivot?.available_from} />
-                              </div>
-                              <div className="col-sm-6">
-                                <label className="form-label">pivot.available_to</label>
-                                <input
-                                  type="date"
-                                  value={pivot.available_to}
-                                  onChange={(e) => syncPivot({ available_to: e.target.value })}
-                                  className="common-input common-input--md border--color-dark bg--white"
-                                />
-                                <FieldError error={errors?.pivot?.available_to} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Progreso */}
-                        {progress !== null && (
-                          <div className="col-sm-12">
-                            <div className="progress" style={{ height: 8 }}>
-                              <div
-                                className="progress-bar"
-                                role="progressbar"
-                                style={{ width: `${progress}%` }}
-                                aria-valuemin="0"
-                                aria-valuemax="100"
-                              />
-                            </div>
-                            <small className="text-muted d-block mt-1">Subiendo… {progress}%</small>
-                          </div>
-                        )}
                       </div>
-                      <div
-                        className="mt-3 p-3 border rounded"
-                        onDrop={onDrop}
-                        onDragOver={prevent}
-                        onDragEnter={prevent}
-                        onDragLeave={prevent}
-                      >
 
-                        {/* Encabezado estilo formulario */}
-                        <div className="">
-                          <h6 className="title m-0">Imágenes del producto</h6>
+                      {/* ================== Localidades ================== */}
+                      <div className="card common-card border border-gray-five overflow-hidden mb-24">
+                        <div className="card-header"><h6 className="title">Localidades</h6></div>
+                        <div className="card-body">
+                          <div className="row g-3">
+                            <Controller
+                              control={control}
+                              name="selected_address_ids"
+                              render={({ field }) => {
+                                const selected = (field.value || []).map(String); // normaliza a string
+                                const toggle = (id, checked) => {
+                                  const sid = String(id);
+                                  field.onChange(
+                                    checked
+                                      ? [...selected, sid]
+                                      : selected.filter((v) => v !== sid)
+                                  );
+                                };
+
+                                return (
+                                  <div className="row g-2">
+                                    {localidadesUnicas.map((l) => {
+                                      const id = String(l.id);
+                                      const checked = selected.includes(id);
+                                      return (
+                                        <div key={l.id} className="col-sm-6 col-lg-4">
+                                          <div className="border rounded p-2 h-100">
+                                            <div className="form-check">
+                                              <input
+                                                id={`addr-${l.id}`}
+                                                type="checkbox"
+                                                className="form-check-input"
+                                                checked={checked}
+                                                onChange={(e) => toggle(id, e.target.checked)}
+                                              />
+                                              <label htmlFor={`addr-${l.id}`} className="form-check-label">
+                                                <strong>#{l.id}</strong> — {l.label || `${l.city || ""}${l.state ? `, ${l.state}` : ""}`}
+                                              </label>
+                                            </div>
+
+                                            <div className="mt-2 small text-muted">
+                                              <div>Destinatario: {l.recipient || "—"}</div>
+                                              <div>Tel: {l.phone || "—"}</div>
+                                              <div>Calle: {l.street || "—"} {l.ext_no || ""}</div>
+                                              <div>CP: {l.zip || "—"}</div>
+                                            </div>
+
+                                            <div className="mt-2">
+                                              {l.hasActiveStock ? (
+                                                <span className="badge bg-success">Activa</span>
+                                              ) : (
+                                                <span className="badge bg-secondary">Sin stock/oculta</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              }}
+                            />
+                            <small className="text-muted d-block mt-2">
+                              Marca todas las sucursales donde estará disponible este producto.
+                            </small>
+                            <FieldError error={errors.selected_address_ids} />
+
+
+                            <div className="col-12">
+                              <hr />
+
+                              <div className="accordion" id="accNuevaLocalidad">
+                                <div className="accordion-item">
+                                  <h2 className="accordion-header" id="headingNuevaLocalidad">
+                                    <button
+                                      className={`accordion-button ${localidadesUnicas.length === 0 ? "" : "collapsed"}`}
+                                      type="button"
+                                      data-bs-toggle="collapse"
+                                      data-bs-target="#collapseNuevaLocalidad"
+                                      aria-expanded={localidadesUnicas.length === 0 ? "true" : "false"}
+                                      aria-controls="collapseNuevaLocalidad"
+                                    >
+                                      Nueva localidad rápida (opcional)
+                                      {localidadesUnicas.length === 0 && (
+                                        <span className="badge bg-danger ms-2">Obligatoria</span>
+                                      )}
+                                    </button>
+                                  </h2>
+
+                                  <div
+                                    id="collapseNuevaLocalidad"
+                                    className={`accordion-collapse collapse ${localidadesUnicas.length === 0 ? "show" : ""}`}
+                                    aria-labelledby="headingNuevaLocalidad"
+                                    data-bs-parent="#accNuevaLocalidad"
+                                  >
+                                    <div className="accordion-body">
+                                      <small className="text-muted d-block mb-2">
+                                        Si llenas esta sección, se requiere <b>Destinatario</b>, <b>Teléfono</b> y <b>Calle</b>.
+                                      </small>
+
+                                      <div className="row g-2">
+                                        {[
+                                          ["recipient", "Destinatario *"],
+                                          ["phone", "Teléfono *"],
+                                          ["street", "Calle *"],
+                                          ["ext_no", "No. Ext"],
+                                          ["int_no", "No. Int"],
+                                          ["neighborhood", "Colonia"],
+                                          ["city", "Ciudad"],
+                                          ["state", "Estado"],
+                                          ["zip", "C.P."],
+                                        ].map(([k, label]) => (
+                                          <div className="col-sm-6" key={k}>
+                                            <label className="form-label">{label}</label>
+                                            <input
+                                              type="text"
+                                              className="common-input common-input--md border--color-dark bg--white"
+                                              {...register(`new_address.${k}`, {
+                                                // 🔧 deja estos 3 siempre requeridos si así lo deseas:
+                                                required: (k === "recipient" || k === "phone" || k === "street")
+                                                  ? "Este campo es obligatorio"
+                                                  : false,
+                                              })}
+                                            />
+                                            <FieldError error={errors?.new_address?.[k]} />
+                                          </div>
+                                        ))}
+
+                                        <div className="col-12">
+                                          <label className="form-label">Referencias</label>
+                                          <textarea
+                                            className="common-input common-input--md border--color-dark bg--white"
+                                            placeholder="Punto de referencia, horario, etc."
+                                            {...register("new_address.references")}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ================== Disponibilidad por sucursal ================== */}
+                      <div className="card common-card border border-gray-five overflow-hidden mb-24">
+                        <div className="card-header">
+                          <h6 className="title">Disponibilidad por sucursal</h6>
                         </div>
 
                         <div className="card-body">
-                          <input
-                            ref={inputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            hidden
-                            onChange={onPick}
-                          />
+                          {/* Nota introductoria para humanos */}
+                          <div className="p-3 rounded mb-3" style={{ background: "#f7f7fb", border: "1px solid rgba(0,0,0,.06)" }}>
+                            <strong>¿Para qué sirve?</strong>
+                            <div className="mt-1">
+                              Define <em>una sola regla</em> de stock y disponibilidad que se aplicará a
+                              <b> todas tus sucursales</b>. Si alguna sucursal es distinta (más/menos stock,
+                              fechas, inactiva), luego agregas esa <b>excepción</b> abajo.
+                            </div>
+                          </div>
 
-                          <div
-                            role="button"
-                            onClick={openPicker}
-                            className="w-100 mb-3 p-3 text-center border border-dashed rounded"
-                            style={{ borderStyle: "dashed", cursor: "pointer" }}
-                          >
+                          {/* Regla general para todas las sucursales */}
+                          <h6 className="mb-2">Regla general (aplica a todas)</h6>
+                          <div className="row g-3 align-items-end">
+                            <div className="col-sm-3">
+                              <label className="form-label">
+                                Stock para todas <span className="text-muted">(ej. 10)</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                {...register("pivot_default.stock")}
+                              />
+                              <small className="text-muted d-block mt-1">
+                                Si no indicas nada, el stock de producto se usará como base.
+                              </small>
+                              <FieldError error={errors?.pivot_default?.stock} />
+                            </div>
+
+                            <div className="col-sm-3">
+                              <div className="form-check form-switch mt-4">
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  id="is_active_default"
+                                  {...register("pivot_default.is_active")}
+                                />
+                                <label htmlFor="is_active_default" className="form-check-label">
+                                  Producto activo en todas
+                                </label>
+                              </div>
+                              <small className="text-muted d-block">
+                                Apágalo si, por ahora, no quieres que se muestre a la venta.
+                              </small>
+                              <FieldError error={errors?.pivot_default?.is_active} />
+                            </div>
+
+                            <div className="col-sm-3">
+                              <label className="form-label">Disponible desde</label>
+                              <input
+                                type="date"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                {...register("pivot_default.available_from")}
+                              />
+                              <small className="text-muted">Déjalo vacío para disponibilidad inmediata.</small>
+                            </div>
+
+                            <div className="col-sm-3">
+                              <label className="form-label">Disponible hasta</label>
+                              <input
+                                type="date"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                {...register("pivot_default.available_to")}
+                              />
+                              <small className="text-muted">Déjalo vacío si no tiene fecha de término.</small>
+                            </div>
+
+                            <div className="col-12">
+                              <label className="form-label">Notas internas</label>
+                              <input
+                                type="text"
+                                className="common-input common-input--md border--color-dark bg--white"
+                                placeholder="Ej. Solo exhibición, llega lote nuevo el lunes, etc."
+                                {...register("pivot_default.notes")}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Excepciones por sucursal */}
+                          {/* <hr className="my-4" />
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h6 className="mb-0">Excepciones por sucursal (solo si alguna difiere)</h6>
+                            <button
+                              type="button"
+                              className="btn btn-outline-light btn-sm"
+                              onClick={addPivotOverrides}
+                              title="Crea excepciones para las sucursales seleccionadas arriba"
+                            >
+                              Crear excepciones para seleccionadas
+                            </button>
+                          </div> */}
+
+                          {pivotFields.length === 0 ? (
+                            <small className="text-muted d-block">
+                              Aún no hay excepciones. La regla general se aplicará a todas tus sucursales.
+                            </small>
+                          ) : (
+                            pivotFields.map((field, index) => (
+                              <div key={field.id} className="p-3 border rounded mb-2">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <strong>
+                                    Sucursal ID: {watch(`pivots.${index}.address_id`) || field.address_id}
+                                  </strong>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => removePivot(index)}
+                                  >
+                                    Quitar excepción
+                                  </button>
+                                </div>
+
+                                <div className="row g-3 align-items-end">
+                                  <div className="col-sm-3">
+                                    <label className="form-label">Stock solo en esta sucursal</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      className="common-input common-input--md border--color-dark bg--white"
+                                      placeholder="Deja vacío para usar la regla general"
+                                      {...register(`pivots.${index}.stock`)}
+                                    />
+                                  </div>
+
+                                  <div className="col-sm-3">
+                                    <div className="form-check form-switch mt-4">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input"
+                                        {...register(`pivots.${index}.is_active`)}
+                                        defaultChecked
+                                      />
+                                      <label className="form-check-label">Activo en esta sucursal</label>
+                                    </div>
+                                  </div>
+
+                                  <div className="col-sm-3">
+                                    <label className="form-label">Desde (solo esta)</label>
+                                    <input
+                                      type="date"
+                                      className="common-input common-input--md border--color-dark bg--white"
+                                      {...register(`pivots.${index}.available_from`)}
+                                    />
+                                  </div>
+
+                                  <div className="col-sm-3">
+                                    <label className="form-label">Hasta (solo esta)</label>
+                                    <input
+                                      type="date"
+                                      className="common-input common-input--md border--color-dark bg--white"
+                                      {...register(`pivots.${index}.available_to`)}
+                                    />
+                                  </div>
+
+                                  <div className="col-12">
+                                    <label className="form-label">Notas (solo esta)</label>
+                                    <input
+                                      type="text"
+                                      className="common-input common-input--md border--color-dark bg--white"
+                                      placeholder="Si lo dejas vacío, se usan las notas generales"
+                                      {...register(`pivots.${index}.notes`)}
+                                    />
+                                  </div>
+
+                                  {/* Campo técnico oculto */}
+                                  <input
+                                    type="hidden"
+                                    {...register(`pivots.${index}.address_id`)}
+                                    defaultValue={field.address_id}
+                                  />
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+
+                      {/* ================== Imágenes ================== */}
+                      <div className="card common-card border border-gray-five overflow-hidden mb-24" onDrop={onDrop} onDragOver={prevent} onDragEnter={prevent} onDragLeave={prevent}>
+                        <div className="card-header"><h6 className="title">Imágenes del producto</h6></div>
+                        <div className="card-body">
+                          <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={onPick} />
+
+                          <div role="button" onClick={openPicker} className="w-100 mb-3 p-3 text-center border border-dashed rounded" style={{ borderStyle: "dashed", cursor: "pointer" }}>
                             <div className="mb-1 fw-semibold text-dark">Arrastra y suelta aquí</div>
                             <small className="text-muted">o haz clic para seleccionar (máx. 10, 2MB c/u)</small>
                           </div>
 
-                          {/* Grid responsiva de 10 slots */}
                           <div className="row g-2">
-                            {Array.from({ length: 10 }).map((_, i) => {
+                            {Array.from({ length: MAX_FILES }).map((_, i) => {
                               const f = files[i];
                               return (
                                 <div className="col-6 col-sm-4 col-md-3 col-lg-2" key={i}>
-                                  <div
-                                    className="position-relative border rounded d-flex align-items-center justify-content-center"
-                                    style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }}
-                                    onClick={openPicker}
-                                  >
+                                  <div className="position-relative border rounded d-flex align-items-center justify-content-center" style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }} onClick={openPicker}>
                                     {f ? (
                                       <>
-                                        <img
-                                          src={URL.createObjectURL(f)}
-                                          alt={`img-${i}`}
-                                          className="position-absolute top-0 start-0 w-100 h-100"
-                                          style={{ objectFit: "cover" }}
-                                        />
-                                        <button
-                                          type="button"
-                                          className="btn btn-sm btn-danger position-absolute"
-                                          style={{ top: 6, right: 6 }}
-                                          onClick={(e) => { e.stopPropagation(); removeFileAt(i); }}
-                                          aria-label="Eliminar imagen"
-                                        >
-                                          ×
-                                        </button>
+                                        <img src={URL.createObjectURL(f)} alt={`img-${i}`} className="position-absolute top-0 start-0 w-100 h-100" style={{ objectFit: "cover" }} />
+                                        <button type="button" className="btn btn-sm btn-danger position-absolute" style={{ top: 6, right: 6 }} onClick={(e) => { e.stopPropagation(); removeFileAt(i); }} aria-label="Eliminar imagen">×</button>
                                       </>
                                     ) : (
-                                      <div
-                                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-muted"
-                                        style={{ fontSize: 12 }}
-                                      >
-                                        Slot {i + 1}
-                                      </div>
+                                      <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-muted" style={{ fontSize: 12 }}>Slot {i + 1}</div>
                                     )}
                                   </div>
                                 </div>
@@ -821,23 +1270,29 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                             })}
                           </div>
 
-                          {/* Preview principal grande (primer imagen) */}
+                          {/* Preview principal */}
                           {files[0] && (
                             <div className="mt-3">
                               <label className="form-label fw-semibold">Preview principal</label>
                               <div className="border rounded overflow-hidden">
-                                <img
-                                  src={URL.createObjectURL(files[0])}
-                                  alt="preview-principal"
-                                  style={{ width: "100%", height: 350, objectFit: "cover" }}
-                                />
+                                <img src={URL.createObjectURL(files[0])} alt="preview-principal" style={{ width: "100%", height: 350, objectFit: "cover" }} />
                               </div>
+                            </div>
+                          )}
+
+                          {/* Progreso */}
+                          {progress !== null && (
+                            <div className="mt-3">
+                              <div className="progress" style={{ height: 8 }}>
+                                <div className="progress-bar" role="progressbar" style={{ width: `${progress}%` }} aria-valuemin="0" aria-valuemax="100" />
+                              </div>
+                              <small className="text-muted d-block mt-1">Subiendo… {progress}%</small>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Botón a LO ANCHO */}
+                      {/* ================== Submit ================== */}
                       <div className="mt-3">
                         <button type="submit" className="btn btn-main btn-md w-100" disabled={isSubmitting}>
                           {isSubmitting ? "Guardando…" : "Agregar producto"}
@@ -849,65 +1304,6 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
 
                 {/* Imágenes del producto (debajo del form) */}
 
-              </div>
-
-              {/* Columna derecha: Vivienda */}
-              <div className="col-lg-4">
-                <div className="card common-card border border-gray-five overflow-hidden">
-                  <div className="card-header">
-                    <h6 className="title">Vivienda / Dirección del vendedor</h6>
-                  </div>
-                  <div className="card-body">
-                    <small className="text-muted d-block mb-2">
-                      Si llenas esta sección, el backend requiere <strong>Destinatario, Teléfono y Calle</strong>.
-                    </small>
-                    <div className="row g-2">
-                      {[
-                        ["recipient", "Destinatario *"],
-                        ["phone", "Teléfono *"],
-                        ["street", "Calle *"],
-                        ["ext_no", "No. Ext"],
-                        ["int_no", "No. Int"],
-                        ["neighborhood", "Colonia"],
-                        ["city", "Ciudad"],
-                        ["state", "Estado"],
-                        ["zip", "C.P."],
-                      ].map(([key, label]) => (
-                        <div className="col-12" key={key}>
-                          <label className="form-label">{label}</label>
-                          <input
-                            type="text"
-                            value={addressSingle[key]}
-                            onChange={(e) => setAddressSingle((s) => ({ ...s, [key]: e.target.value }))}
-                            className="common-input common-input--md border--color-dark bg--white"
-                          />
-                        </div>
-                      ))}
-                      <div className="col-12">
-                        <label className="form-label">Referencias</label>
-                        <textarea
-                          value={addressSingle.references}
-                          onChange={(e) => setAddressSingle((s) => ({ ...s, references: e.target.value }))}
-                          className="common-input common-input--md border--color-dark bg--white"
-                          placeholder="Punto de referencia, horario, etc."
-                        />
-                      </div>
-                    </div>
-
-                    <hr className="my-3" />
-                    <label className="form-label">IDs de direcciones existentes</label>
-                    <input
-                      type="text"
-                      value={addressIdsInput}
-                      onChange={(e) => setAddressIdsInput(e.target.value)}
-                      placeholder="Ej. 21, 22, 23"
-                      className="common-input common-input--md border--color-dark bg--white"
-                    />
-                    <small className="text-muted d-block mt-1">
-                      También puedes usar el campo <code>address_id</code> en el formulario principal.
-                    </small>
-                  </div>
-                </div>
               </div>
             </div>
 
