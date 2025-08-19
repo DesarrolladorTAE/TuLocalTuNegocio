@@ -148,7 +148,7 @@ const MasterLayout = ({ children }) => {
                                 </ul>
                             </li>
                             <li className="nav-menu__item">
-                                <Link to="/contact" className="nav-menu__link">
+                                <Link to="/donaciones" className="nav-menu__link">
                                     Contact
                                 </Link>
                             </li>

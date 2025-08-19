@@ -27,6 +27,7 @@ const ProfilePage = () => {
   const [person, setPerson] = useState(getCachedUser()); // ← pinta algo desde el inicio si hay caché
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState('profile');
   // const [me, setMe] = useState(null);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ const ProfilePage = () => {
           // primero pinta caché (ya lo hicimos al iniciar el state)
           const me = await productosPorVendedor(user.id);
           if (cancel) return;
-          setPerson(me);
+          setPerson(me?.vendor);
           setProducts(me.products);
         }
       } catch (e) {
@@ -65,6 +66,15 @@ const ProfilePage = () => {
     };
   }, [id, isVendorView]);
 
+  const refreshDatos = (id) => {
+    productosPorVendedor(id).then((res) => {
+      setPerson(res.vendor)
+      setProducts(res.products)
+    }).catch((err) => {
+      console.log('err: ', err)
+    })
+  }
+
   return (
     <>
       {loading && <Preloader />}
@@ -74,7 +84,8 @@ const ProfilePage = () => {
         entity={person}
         showNewProduct={!isVendorView}
         isVendorView={isVendorView}
-
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
       />
 
       <Profile
@@ -83,6 +94,8 @@ const ProfilePage = () => {
         products={products}
         isVendorView={isVendorView}
         categorias={JSON.parse(localStorage.getItem('categorias'))}
+        refreshDatos={refreshDatos}
+        onGoToEditTab={() => setActiveTab('new')}
       />
 
       {error && (

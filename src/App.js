@@ -28,7 +28,7 @@ import LoginPage from "./pages/LoginPage";
 import BlogPage from "./pages/BlogPage";
 import BlogDetailsPage from "./pages/BlogDetailsPage";
 import BlogDetailsSidebarPage from "./pages/BlogDetailsSidebarPage";
-import ContactPage from "./pages/ContactPage";
+import ContactPage from "./pages/ContactPage.jsx";
 import OAuthCallback from "./pages/OAuthCallback";
 
 function App() {
@@ -75,7 +75,7 @@ function App() {
           path="/blog-details-sidebar"
           element={<BlogDetailsSidebarPage />}
         />
-        <Route exact path="/contact" element={<ContactPage />} />
+        <Route exact path="/donaciones" element={<ContactPage />} />
 
         <Route exact path="/register" element={<RegisterPage />} />
         <Route exact path="/login" element={<LoginPage />} />

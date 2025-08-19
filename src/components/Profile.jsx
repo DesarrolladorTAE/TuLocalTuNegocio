@@ -27,7 +27,7 @@ const MAX_SIZE = 2 * 1024 * 1024; // 2MB
 const FieldError = ({ error }) =>
   error ? <small className="text-danger d-block mt-1">{error.message || String(error)}</small> : null;
 
-const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, categorias, onCreated, localidadesExistentes = [] }) => {
+const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEdit, products = [], categorias, onCreated, localidadesExistentes = [], refreshDatos }) => {
   const [activeButton, setActiveButton] = useState("grid-view");
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(null);
@@ -38,11 +38,14 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
   const descRef = useRef(null);
   const [selectedCat, setSelectedCat] = useState(null); // null = todas
   const [searchTerm, setSearchTerm] = useState("");
+  const [previews, setPreviews] = useState([]);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [currentImages, setCurrentImages] = useState([]);
 
   // Categorías únicas del vendedor (a partir de products)
   const categoriasVendedor = useMemo(() => {
     const catsMap = {};
-    products.forEach((p) => {
+    (Array.isArray(products) ? products : []).forEach((p) => {
       if (p.category) {
         catsMap[p.category.id] = p.category;
       }
@@ -78,6 +81,20 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     // console.log('categorias: ', categorias)
   }, [entity]);
 
+  // genera/revoca URLs cuando cambie `files`
+  useEffect(() => {
+    if (!files || files.length === 0) {
+      setPreviews([]);
+      return;
+    }
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [files]);
+
   // === Estado para direcciones ===
   const [addressIdsInput, setAddressIdsInput] = useState(""); // "1,2,3"
   const [addressSingle, setAddressSingle] = useState({ ...emptyAddress });
@@ -98,10 +115,12 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     setError,
     setValue,
     watch,
+    clearErrors,
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
+      id: "",
       name: "",
       price: "",
       stock: "",
@@ -147,7 +166,11 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     name: "pivots",
   });
 
+  // arriba del componente
   const selectedIds = watch("selected_address_ids") || [];
+  const newAddr = watch("new_address") || {};
+  const hasNewAddrInput = Object.values(newAddr).some(v => (v ?? "").toString().trim() !== "");
+  const exigirNueva = selectedIds.length === 0 || hasNewAddrInput;
   // Agrega pivote por cada localidad seleccionada que aún no tenga override
   const addPivotOverrides = () => {
     const existing = new Set((pivotFields || []).map((p) => String(p.address_id)));
@@ -208,22 +231,23 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
   const onSubmit = async (data) => {
     try {
       setProgress(null);
+
       const fd = new FormData();
-      // === Producto base ===
+      // base
+      if (data.id) fd.append("id", data.id);            // 👈 aquí va el id si existe
       fd.append("name", (data.name || "").trim());
       fd.append("price", data.price);
       fd.append("stock", data.stock);
       if (data.category_id) fd.append("category_id", data.category_id);
       if (data.description) fd.append("description", data.description);
 
-      // === Imágenes ===
+      // imágenes nuevas
       files.forEach((file) => fd.append("images[]", file));
 
-      // === Localidades existentes ===
-      const ids = data.selected_address_ids || [];
-      ids.forEach((id) => fd.append("address_ids[]", id));
+      // localidades
+      (data.selected_address_ids || []).forEach((id) => fd.append("address_ids[]", id));
 
-      // === Nueva localidad (rápida) ===
+      // nueva localidad
       const a = data.new_address || {};
       const hasSingle = a.recipient || a.phone || a.street;
       if (hasSingle) {
@@ -239,7 +263,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
         if (a.references) fd.append("address[references]", a.references);
       }
 
-      // === Pivote por defecto ===
+      // pivote default
       const d = data.pivot_default || {};
       if (d.stock !== "") fd.append("pivot[stock]", String(d.stock));
       fd.append("pivot[is_active]", d.is_active ? "1" : "0");
@@ -247,8 +271,8 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
       if (d.available_to) fd.append("pivot[available_to]", d.available_to);
       if (d.notes) fd.append("pivot[notes]", d.notes);
 
-      // === Pivotes por localidad (overrides, opcionales) ===
-      (data.pivots || []).forEach((p, idx) => {
+      // pivotes sucursal
+      (data.pivots || []).forEach((p) => {
         const base = `pivots[${p.address_id}]`;
         if (p.stock !== "") fd.append(`${base}[stock]`, String(p.stock));
         fd.append(`${base}[is_active]`, p.is_active ? "1" : "0");
@@ -257,26 +281,36 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
         if (p.notes) fd.append(`${base}[notes]`, p.notes);
       });
 
+      // 👉 un solo entrypoint: crea o actualiza según haya id en la raíz
       const resp = await createProduct(fd, (p) => {
         if (typeof p?.percent === "number") setProgress(p.percent);
       });
 
-      alertaSuccess(resp?.message || "Producto creado");
-      reset();
+      const isUpdate = !!data.id;
+      alertaSuccess(resp?.message || (isUpdate ? "Producto actualizado" : "Producto creado"));
+
+      // Limpieza y refresco
+      reset();            // esto borra el id para volver al modo "crear"
       setFiles([]);
       setProgress(null);
+      setCurrentImages([]);
+      setEditingProductId?.(null); // si usas banderita visual opcional
       onCreated?.(resp);
+      refreshDatos(entity.id);
     } catch (err) {
       const errors422 = err?.response?.data?.errors;
+      const isUpdate = !!data.id;
       const msg =
         err?.response?.data?.message ||
         (errors422 && Object.values(errors422)?.[0]?.[0]) ||
-        "No se pudo crear el producto";
+        (isUpdate ? "No se pudo actualizar el producto" : "No se pudo crear el producto");
 
       if (errors422) applyServerErrors(errors422);
       alertaError(msg);
     }
   };
+
+
 
   const saveDescripcion = async () => {
     const next = localDescripcion.trim();
@@ -371,36 +405,64 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState("");
     const [hoverIndex, setHoverIndex] = useState(-1);
+    const rootRef = useRef(null);
+    const inputRef = useRef(null);
 
     const selectedValue = watch(name);
+    const opciones = useMemo(() => (categorias || []).map(c => ({
+      value: String(c.id),
+      label: c.name,
+      image: c.image_url,
+    })), [categorias]);
+
     const selectedOpt = useMemo(
-      () => opcionesCategorias.find((o) => o.value === String(selectedValue)),
-      [selectedValue, opcionesCategorias]
+      () => opciones.find(o => o.value === String(selectedValue)),
+      [opciones, selectedValue]
     );
 
     const filtered = useMemo(() => {
       const term = q.trim().toLowerCase();
-      if (!term) return opcionesCategorias;
-      return opcionesCategorias.filter(
-        (o) =>
-          o.label.toLowerCase().includes(term) ||
-          String(o.value).toLowerCase().includes(term)
+      if (!term) return opciones;
+      return opciones.filter(o =>
+        o.label.toLowerCase().includes(term) ||
+        String(o.value).toLowerCase().includes(term)
       );
-    }, [q, opcionesCategorias]);
+    }, [q, opciones]);
 
     const selectOption = (opt) => {
       setValue(name, opt?.value || "");
-      console.log('opcion cat: ', opt)
-      setOpen(false);
       setQ("");
+      setOpen(false);
     };
 
-    const clearSelection = () => {
+    const clearSelection = (e) => {
+      e?.stopPropagation?.();
       setValue(name, "");
       setQ("");
     };
 
-    // teclado dentro del input
+    // Cerrar por clic fuera (solo cuando está abierto)
+    useEffect(() => {
+      if (!open) return;
+      const onDocDown = (e) => {
+        if (!rootRef.current?.contains(e.target)) setOpen(false);
+      };
+      document.addEventListener("mousedown", onDocDown);
+      return () => document.removeEventListener("mousedown", onDocDown);
+    }, [open]);
+
+    // Resetear hover al cerrar
+    useEffect(() => {
+      if (!open) setHoverIndex(-1);
+    }, [open]);
+
+    // Apertura explícita (nunca togglear)
+    const openAndFocus = () => {
+      if (!open) setOpen(true);
+      inputRef.current?.focus();
+    };
+
+    // Teclado dentro del input
     const onKeyDown = (e) => {
       if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
         setOpen(true);
@@ -410,10 +472,10 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHoverIndex((i) => Math.min(i + 1, filtered.length - 1));
+        setHoverIndex(i => Math.min(i + 1, filtered.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHoverIndex((i) => Math.max(i - 1, 0));
+        setHoverIndex(i => Math.max(i - 1, 0));
       } else if (e.key === "Enter") {
         e.preventDefault();
         const opt = filtered[Math.max(0, hoverIndex)];
@@ -424,28 +486,22 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
       }
     };
 
-    useEffect(() => {
-      if (!open) setHoverIndex(-1);
-    }, [open, q]);
-
     return (
-      <div className="col-sm-6">
-        <label className="form-label">{label}</label>
+      <div className="col-sm-6" ref={rootRef}>
+        <label className="form-label" htmlFor="category-search">{label}</label>
 
-        {/* Control visible */}
-        <div className="position-relative">
-          <div
-            className="d-flex align-items-center gap-2 common-input common-input--md border--color-dark bg--white"
-            role="combobox"
-            aria-expanded={open}
-            aria-haspopup="listbox"
-            onClick={() => setOpen((v) => !v)}
-            style={{ cursor: "text", padding: 6 }}
-          >
-            {/* Miniatura de la selección */}
+        <div
+          className="position-relative"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={openAndFocus}        // <- solo abrir, NO togglear
+          style={{ cursor: "text", padding: 6 }}
+        >
+          <div className="d-flex align-items-center gap-2 common-input common-input--md border--color-dark bg--white">
             {selectedOpt?.image && (
               <img
-                src={`${selectedOpt.image}`}
+                src={selectedOpt.image}
                 alt={selectedOpt.label}
                 width={28}
                 height={28}
@@ -453,51 +509,38 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
               />
             )}
 
-            {/* Input de búsqueda */}
             <input
+              ref={inputRef}
+              id="category-search"
+              name="category-search"
               type="text"
               className="border-0 flex-grow-1"
               placeholder={selectedOpt ? selectedOpt.label : "Buscar o seleccionar…"}
               value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                if (!open) setOpen(true);
-              }}
+              onChange={(e) => { setQ(e.target.value); if (!open) setOpen(true); }}
               onKeyDown={onKeyDown}
               onFocus={() => setOpen(true)}
               style={{ outline: "none", background: "transparent" }}
             />
 
-            {/* Limpiar */}
             {selectedValue && (
               <button
                 type="button"
                 className="btn btn-sm btn-outline-light"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearSelection();
-                }}
+                onClick={clearSelection}
                 title="Quitar selección"
               >
                 <i className="fas fa-times" />
               </button>
             )}
-
-            {/* Chevron */}
             <i className={`ms-auto las la-angle-${open ? "up" : "down"}`} />
           </div>
 
-          {/* Lista desplegable */}
           {open && (
             <ul
               role="listbox"
               className="list-group position-absolute w-100 mt-1 shadow-sm"
-              style={{
-                zIndex: 30,
-                maxHeight: 280,
-                overflowY: "auto",
-                borderRadius: 8,
-              }}
+              style={{ zIndex: 30, maxHeight: 280, overflowY: "auto", borderRadius: 8 }}
             >
               {filtered.length === 0 && (
                 <li className="list-group-item small text-muted">Sin resultados…</li>
@@ -515,14 +558,14 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                     style={{ cursor: "pointer" }}
                     onMouseEnter={() => setHoverIndex(idx)}
                     onMouseDown={(e) => {
-                      // evita que el blur cierre antes del click
                       e.preventDefault();
+                      e.stopPropagation();   // <- evita que el contenedor reciba el click y reabra
                       selectOption(opt);
                     }}
                   >
                     {opt.image && (
                       <img
-                        src={`${opt.image}`}
+                        src={opt.image}
                         alt={opt.label}
                         width={32}
                         height={32}
@@ -541,16 +584,15 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
           )}
         </div>
 
-        {/* Campo real de RHF (oculto) */}
+        {/* Campo real para RHF */}
         <input type="hidden" {...register(name)} />
-
         <FieldError error={errors?.[name]} />
-        {/* Vista previa opcional */}
+
         {selectedOpt && (
           <div className="mt-2 d-flex align-items-center gap-2">
             {selectedOpt.image && (
               <img
-                src={`${selectedOpt.image}`}
+                src={selectedOpt.image}
                 alt={selectedOpt.label}
                 width={44}
                 height={44}
@@ -567,6 +609,111 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
     );
   }
 
+  const goToFormTab = () => {
+    // Si usas los tabs de Bootstrap:
+    const trigger = document.querySelector('#pills-Settingss-tab');
+    if (trigger && window.bootstrap?.Tab) {
+      const tab = new window.bootstrap.Tab(trigger);
+      tab.show();
+    } else {
+      // Fallback: fuerza la visibilidad por clases si no hay bootstrap.Tab
+      const pane = document.getElementById('pills-Settingss');
+      if (pane) {
+        // quita "show active" de otros y ponlo aquí si lo manejas a mano
+        pane.classList.add('show', 'active');
+        document.getElementById('pills-profile')?.classList.remove('show', 'active');
+        document.getElementById('pills-portfolio')?.classList.remove('show', 'active');
+      }
+    }
+    // Scroll al formulario
+    setTimeout(() => {
+      document.getElementById('nuevoProducto')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  };
+
+  const mapProductToForm = (prod) => ({
+    id: prod?.id ?? "",   // 👈 importante
+    name: prod?.name ?? "",
+    price: prod?.price ?? "",
+    stock: prod?.stock ?? "",
+    category_id: String(prod?.category?.id ?? ""),
+    description: prod?.description ?? "",
+    selected_address_ids: (prod?.locations ?? []).map(l => String(l.id)),
+    new_address: { ...emptyAddress },
+    pivot_default: { stock: "", is_active: true, available_from: "", available_to: "", notes: "" },
+    pivots: (prod?.locations ?? []).map(loc => ({
+      address_id: String(loc.id),
+      stock: loc?.pivot?.stock ?? "",
+      is_active: !!(loc?.pivot?.is_active ?? true),
+      available_from: loc?.pivot?.available_from ?? "",
+      available_to: loc?.pivot?.available_to ?? "",
+      notes: loc?.pivot?.notes ?? "",
+    })),
+  });
+
+
+  const handleEditProduct = (prod) => {
+    // 1) Guardar ID en edición y (opcional) sus imágenes actuales para mostrarlas
+    setEditingProductId(prod.id);
+    setCurrentImages(Array.isArray(prod.images) ? prod.images : []);
+
+    // 2) Cargar valores en el formulario
+    const values = mapProductToForm(prod);
+    reset(values);
+
+    // 3) Saltar al tab del formulario
+    goToFormTab();
+    onGoToEditTab?.();
+  };
+
+  // Estado local de contacto
+  const [contact, setContact] = useState({
+    name: entity?.name || "",
+    email: entity?.email || "",
+    phone: entity?.phone || "",
+    terminos_aceptados: !!entity?.terminos_aceptados,
+  });
+
+  useEffect(() => {
+    setContact({
+      name: entity?.name || "",
+      email: entity?.email || "",
+      phone: entity?.phone || "",
+      terminos_aceptados: !!entity?.terminos_aceptados,
+    });
+  }, [entity?.id, entity?.name, entity?.email, entity?.phone, entity?.terminos_aceptados]);
+
+  const [savingContact, setSavingContact] = useState(false);
+
+  const handleActualizarContacto = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingContact(true);
+
+      // Normaliza/valida payload
+      const payload = {
+        name: (contact.name || "").trim(),
+        phone: (contact.phone || "").replace(/\D/g, "").slice(0, 10),
+        // Si permites editar el email, inclúyelo; si no, quita esta línea
+        email: (contact.email || "").trim(),
+        terminos_aceptados: contact.terminos_aceptados ? 1 : 0,
+      };
+
+      // Validaciones rápidas
+      if (!payload.name) throw new Error("El nombre no puede estar vacío.");
+      if (payload.phone && payload.phone.length !== 10)
+        throw new Error("El teléfono debe tener 10 dígitos.");
+      if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email))
+        throw new Error("El correo no es válido.");
+
+      await actualizarUsuario(payload);
+      onUpdated?.(); // ya lo tienes como prop; refresca entity desde el padre si aplica
+    } catch (err) {
+      alertaError(err);
+    } finally {
+      setSavingContact(false);
+    }
+  };
 
   return (
     <section
@@ -703,6 +850,117 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                 </div>
               )}
 
+              {/* ========================== Informacion Personal =========================== */}
+
+              {!isVendorView && (
+                <div className="profile-sidebar">
+                  <div className="profile-sidebar__item">
+                    <h5 className="profile-sidebar__title">Información de contacto</h5>
+
+                    <form onSubmit={handleActualizarContacto}>
+                      <div className="row gy-3">
+                        <div className="col-12">
+                          <label className="form-label">Nombre</label>
+                          <input
+                            type="text"
+                            className="common-input radius-8 common-input--md"
+                            value={contact.name}
+                            onChange={(e) => setContact((s) => ({ ...s, name: e.target.value }))}
+                            placeholder="Nombre completo"
+                          />
+                        </div>
+
+                        <div className="col-12">
+                          <label className="form-label d-flex align-items-center gap-2">
+                            Email
+                            {entity?.email_verified_at ? (
+                              <span className="badge bg-success">Verificado</span>
+                            ) : (
+                              <span className="badge bg-warning text-dark">Sin verificar</span>
+                            )}
+                          </label>
+                          <input
+                            type="email"
+                            className="common-input radius-8 common-input--md"
+                            value={contact.email}
+                            onChange={(e) => setContact((s) => ({ ...s, email: e.target.value }))}
+                            placeholder="correo@dominio.com"
+                          />
+                          <small className="text-muted d-block mt-1">
+                            Si cambias el correo, podrías requerir verificación nuevamente.
+                          </small>
+                        </div>
+
+                        <div className="col-12">
+                          <label className="form-label">Teléfono (WhatsApp)</label>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            className="common-input radius-8 common-input--md"
+                            value={contact.phone}
+                            onChange={(e) => {
+                              const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              setContact((s) => ({ ...s, phone: onlyDigits }));
+                            }}
+                            placeholder="10 dígitos"
+                          />
+                          <div className="d-flex justify-content-between mt-1">
+                            <small className="text-muted">Ej: 7441234567</small>
+                            {contact.phone?.length === 10 && (
+                              <a
+                                className="link"
+                                href={`https://wa.me/52${contact.phone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Probar chat en WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="col-12">
+                          <div className="form-check form-switch">
+                            <input
+                              id="terminosSwitch"
+                              type="checkbox"
+                              className="form-check-input"
+                              checked={!!contact.terminos_aceptados}
+                              onChange={(e) =>
+                                setContact((s) => ({ ...s, terminos_aceptados: e.target.checked }))
+                              }
+                            />
+                            <label className="form-check-label" htmlFor="terminosSwitch">
+                              Acepto los términos y condiciones
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="col-12">
+                          <button type="submit" className="btn btn-main btn-md w-100" disabled={savingContact}>
+                            {savingContact ? "Guardando..." : "Guardar cambios"}
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+
+                    {/* Metadatos útiles */}
+                    <div className="mt-3 small text-muted">
+                      <div>{(entity?.created_at)}</div>
+                      <div>
+                        Última actualización:{" "}
+                        {entity?.updated_at &&
+                          new Date(entity.updated_at).toLocaleString("es-MX", {
+                            dateStyle: "long",
+                            timeStyle: "short",
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
               {/* ========================== Profile Sidebar End =========================== */}
             </div>
             {/* Tab Content Start */}
@@ -771,6 +1029,17 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                         <Link to={`/product-details/${prod.id}`} className="link w-100">
                           <img src={mainImg?.img_url} alt={prod.name} className="cover-img" />
                         </Link>
+                        {!isVendorView && (
+                          <button
+                            type="button"
+                            className="product-item__wishlist"
+                            aria-label="Wishlist"
+                            title="Editar producto"
+                            onClick={() => handleEditProduct(prod)}
+                          >
+                            <i className="fas fa-pen" />
+                          </button>
+                        )}
                       </div>
                       <div className="product-item__content">
                         <h6 className="product-item__title">
@@ -778,6 +1047,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                             {prod.name}
                           </Link>
                         </h6>
+
                         <div className="product-item__info flx-between gap-2">
                           <span className="product-item__author">
                             Categoría:
@@ -832,6 +1102,26 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                   <div className="card-header">
                     <h6 className="title">Nuevo Producto</h6>
                   </div>
+                  {editingProductId && (
+                    <div className="alert alert-info d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>Editando producto #{editingProductId}</strong>
+                        <span className="ms-2">— guarda los cambios o cancela para volver a crear uno nuevo.</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline-light btn-sm"
+                        onClick={() => {
+                          setEditingProductId(null);
+                          setCurrentImages([]);
+                          reset(); // vuelve a defaults del form
+                        }}
+                      >
+                        Cancelar edición
+                      </button>
+                    </div>
+                  )}
+
                   <div className="card-body">
                     <form onSubmit={handleSubmit(onSubmit)}>
                       {/* ================== Datos del producto ================== */}
@@ -841,6 +1131,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                           <div className="row g-3">
                             <div className="col-sm-6">
                               <label htmlFor="name" className="form-label">Nombre *</label>
+                              <input type="hidden" {...register("id")} />
                               <input
                                 id="name"
                                 type="text"
@@ -980,11 +1271,11 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                                 <div className="accordion-item">
                                   <h2 className="accordion-header" id="headingNuevaLocalidad">
                                     <button
-                                      className={`accordion-button ${localidadesUnicas.length === 0 ? "" : "collapsed"}`}
+                                      className={`accordion-button ${exigirNueva ? "" : "collapsed"}`}
                                       type="button"
                                       data-bs-toggle="collapse"
                                       data-bs-target="#collapseNuevaLocalidad"
-                                      aria-expanded={localidadesUnicas.length === 0 ? "true" : "false"}
+                                      aria-expanded={exigirNueva ? "true" : "false"}
                                       aria-controls="collapseNuevaLocalidad"
                                     >
                                       Nueva localidad rápida (opcional)
@@ -996,7 +1287,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
 
                                   <div
                                     id="collapseNuevaLocalidad"
-                                    className={`accordion-collapse collapse ${localidadesUnicas.length === 0 ? "show" : ""}`}
+                                    className={`accordion-collapse collapse ${exigirNueva ? "show" : ""}`}
                                     aria-labelledby="headingNuevaLocalidad"
                                     data-bs-parent="#accNuevaLocalidad"
                                   >
@@ -1022,11 +1313,12 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                                             <input
                                               type="text"
                                               className="common-input common-input--md border--color-dark bg--white"
+                                              disabled={!exigirNueva && !hasNewAddrInput}
                                               {...register(`new_address.${k}`, {
-                                                // 🔧 deja estos 3 siempre requeridos si así lo deseas:
-                                                required: (k === "recipient" || k === "phone" || k === "street")
-                                                  ? "Este campo es obligatorio"
-                                                  : false,
+                                                required:
+                                                  exigirNueva && (k === "recipient" || k === "phone" || k === "street")
+                                                    ? "Este campo es obligatorio"
+                                                    : false,
                                               })}
                                             />
                                             <FieldError error={errors?.new_address?.[k]} />
@@ -1159,7 +1451,7 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                             </small>
                           ) : (
                             pivotFields.map((field, index) => (
-                              <div key={field.id} className="p-3 border rounded mb-2">
+                              <div key={field.id} className="p-3 border rounded mb-2 mt-2">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                   <strong>
                                     Sucursal ID: {watch(`pivots.${index}.address_id`) || field.address_id}
@@ -1249,7 +1541,28 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                             <div className="mb-1 fw-semibold text-dark">Arrastra y suelta aquí</div>
                             <small className="text-muted">o haz clic para seleccionar (máx. 10, 2MB c/u)</small>
                           </div>
-
+                          {editingProductId && currentImages?.length > 0 && (
+                            <div className="mb-3">
+                              <label className="form-label fw-semibold">Imágenes actuales</label>
+                              <div className="row g-2">
+                                {currentImages.map(img => (
+                                  <div key={img.id} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                                    <div className="border rounded overflow-hidden">
+                                      <img
+                                        src={img.img_url}
+                                        alt=""
+                                        className="w-100"
+                                        style={{ height: 110, objectFit: "cover" }}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <small className="text-muted d-block mt-1">
+                                Si subes nuevas imágenes, se agregarán a este producto (tu backend decide si reemplaza o agrega).
+                              </small>
+                            </div>
+                          )}
                           <div className="row g-2">
                             {Array.from({ length: MAX_FILES }).map((_, i) => {
                               const f = files[i];
@@ -1258,7 +1571,10 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                                   <div className="position-relative border rounded d-flex align-items-center justify-content-center" style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }} onClick={openPicker}>
                                     {f ? (
                                       <>
-                                        <img src={URL.createObjectURL(f)} alt={`img-${i}`} className="position-absolute top-0 start-0 w-100 h-100" style={{ objectFit: "cover" }} />
+                                        <img
+                                          src={previews[i]} alt={`img-${i}`}
+                                          loading="lazy"
+                                          className="position-absolute top-0 start-0 w-100 h-100" style={{ objectFit: "cover" }} />
                                         <button type="button" className="btn btn-sm btn-danger position-absolute" style={{ top: 6, right: 6 }} onClick={(e) => { e.stopPropagation(); removeFileAt(i); }} aria-label="Eliminar imagen">×</button>
                                       </>
                                     ) : (
@@ -1275,7 +1591,10 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                             <div className="mt-3">
                               <label className="form-label fw-semibold">Preview principal</label>
                               <div className="border rounded overflow-hidden">
-                                <img src={URL.createObjectURL(files[0])} alt="preview-principal" style={{ width: "100%", height: 350, objectFit: "cover" }} />
+                                <img
+                                  src={previews[0]}
+                                  loading="lazy"
+                                  alt="preview-principal" style={{ width: "100%", height: 350, objectFit: "cover" }} />
                               </div>
                             </div>
                           )}
@@ -1295,7 +1614,9 @@ const Profile = ({ isVendorView = false, entity, onUpdated, canEdit, products, c
                       {/* ================== Submit ================== */}
                       <div className="mt-3">
                         <button type="submit" className="btn btn-main btn-md w-100" disabled={isSubmitting}>
-                          {isSubmitting ? "Guardando…" : "Agregar producto"}
+                          {isSubmitting
+                            ? (watch("id") ? "Guardando cambios…" : "Guardando…")
+                            : (watch("id") ? "Guardar cambios" : "Agregar producto")}
                         </button>
                       </div>
                     </form>

@@ -204,7 +204,7 @@ const FooterTwo = () => {
               <Link to="#" className="footer-link font-14">
                 Privacy Policy
               </Link>
-              <Link to="/contact" className="footer-link font-14">
+              <Link to="/donaciones" className="footer-link font-14">
                 cookies
               </Link>
             </div>

@@ -4,7 +4,7 @@ import HeaderOne from "../components/HeaderOne";
 // import BrandSectionOne from "../components/BrandSectionOne";
 import FooterOne from "../components/FooterOne";
 import BreadcrumbEight from "../components/BreadcrumbEight";
-import Contact from "../components/Contact";
+import Donation from "../components/Contact";
 import NewsletterTwo from "../components/NewsletterTwo";
 const ContactPage = () => {
 
@@ -20,11 +20,11 @@ const ContactPage = () => {
       <BreadcrumbEight />
 
       {/* Contact */}
-      <Contact />
+      <Donation />
 
 
       {/* NewsletterTwo */}
-      <NewsletterTwo />
+      {/* <NewsletterTwo /> */}
 
 
       {/* BrandSectionOne */}

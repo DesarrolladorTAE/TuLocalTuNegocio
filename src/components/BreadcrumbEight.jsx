@@ -19,7 +19,7 @@ const BreadcrumbEight = () => {
                       to="/"
                       className="breadcrumb-list__link text-body hover-text-main"
                     >
-                      Home
+                      Inicio
                     </Link>
                   </li>
                   <li className="breadcrumb-list__item font-14 text-body">
@@ -28,11 +28,11 @@ const BreadcrumbEight = () => {
                     </span>
                   </li>
                   <li className="breadcrumb-list__item font-14 text-body">
-                    <span className="breadcrumb-list__text">Contact</span>
+                    <span className="breadcrumb-list__text">Donaciones</span>
                   </li>
                 </ul>
                 <h3 className="breadcrumb-two-content__title mb-0 text-capitalize">
-                  Contact Us
+                  Inivtanos un café ☕
                 </h3>
               </div>
             </div>

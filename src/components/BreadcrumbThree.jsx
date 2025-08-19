@@ -19,6 +19,8 @@ const BreadcrumbThree = ({
   showNewProduct = true,
   isVendorView = false,
   onUpdated,
+  activeTab = 'profile',
+  onChangeTab,
 }) => {
 
   const [localName, setLocalName] = useState();
@@ -124,6 +126,26 @@ const BreadcrumbThree = ({
       setSavingName(false);
     }
   };
+
+  useEffect(() => {
+    const map = { profile: '#pills-profile', products: '#pills-portfolio', new: '#pills-Settingss' };
+    const target = map[activeTab];
+    if (!target) return;
+
+    const trigger = document.querySelector(`[data-bs-target="${target}"]`);
+    const pane = document.querySelector(target);
+
+    if (window.bootstrap?.Tab && trigger) {
+      const tab = new window.bootstrap.Tab(trigger);
+      tab.show();
+    } else {
+      // Fallback sin Bootstrap.Tab
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+      pane?.classList.add('show', 'active');
+      document.querySelectorAll('#pills-tabbs .nav-link').forEach(b => b.classList.remove('active'));
+      trigger?.classList.add('active');
+    }
+  }, [activeTab]);
 
   return (
     <section className="breadcrumb-three section-bg position-relative z-index-1 overflow-hidden">
@@ -243,7 +265,7 @@ const BreadcrumbThree = ({
                   </div>
                 </div>
 
-                <div className="breadcrumb-three-content__right flex-shrink-0 d-flex align-items-center gap-4 gap-lg-5">
+                {/* <div className="breadcrumb-three-content__right flex-shrink-0 d-flex align-items-center gap-4 gap-lg-5">
                   <div className="author-rating">
                     <span className="author-rating__text text-heading fw-500 mb-2">Calificación del autor</span>
                     <div className="d-flex align-items-center gap-1">
@@ -255,33 +277,63 @@ const BreadcrumbThree = ({
                       <span className="star-rating__text text-body ms-1">5.0</span>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
 
           <ul className="nav tab-bordered nav-pills mt-4" id="pills-tabbs" role="tablist">
             <li className="nav-item" role="presentation">
-              <button className="nav-link active" id="pills-profile-tab" data-bs-toggle="pill" data-bs-target="#pills-profile" type="button" role="tab" aria-controls="pills-profile" aria-selected="true">
+              <button
+                className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+                id="pills-profile-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-profile"
+                type="button"
+                role="tab"
+                aria-controls="pills-profile"
+                aria-selected={activeTab === 'profile'}
+                onClick={() => onChangeTab?.('profile')}
+              >
                 Perfil
               </button>
             </li>
             <li className="nav-item" role="presentation">
-              <button className="nav-link" id="pills-portfolio-tab" data-bs-toggle="pill" data-bs-target="#pills-portfolio" type="button" role="tab" aria-controls="pills-portfolio" aria-selected="false">
+              <button
+                className={`nav-link ${activeTab === 'products' ? 'active' : ''}`}
+                id="pills-portfolio-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-portfolio"
+                type="button"
+                role="tab"
+                aria-controls="pills-portfolio"
+                aria-selected={activeTab === 'products'}
+                onClick={() => onChangeTab?.('products')}
+              >
                 Productos
               </button>
             </li>
             {showNewProduct && !isVendorView && (
               <li className="nav-item" role="presentation">
-                <button className="nav-link" id="pills-Settingss-tab" data-bs-toggle="pill" data-bs-target="#pills-Settingss" type="button" role="tab" aria-controls="pills-Settingss" aria-selected="false">
+                <button
+                  className={`nav-link ${activeTab === 'new' ? 'active' : ''}`}
+                  id="pills-Settingss-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-Settingss"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-Settingss"
+                  aria-selected={activeTab === 'new'}
+                  onClick={() => onChangeTab?.('new')}
+                >
                   Nuevo Producto
                 </button>
               </li>
             )}
           </ul>
         </div>
-      </div>
-    </section>
+      </div >
+    </section >
   );
 };
 

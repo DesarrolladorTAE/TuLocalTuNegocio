@@ -211,27 +211,27 @@ export function onAuthChange(cb) {
 // Crear productos por usuario.
 // service.js
 export async function createProduct(formData, onProgress) {
-  // Si NO es FormData, construye uno (compatibilidad)
-  let fd = formData instanceof FormData ? formData : (() => {
-    const f = new FormData();
+  // Normaliza a FormData
+  let fd;
+  if (formData instanceof FormData) {
+    fd = formData;
+  } else {
+    fd = new FormData();
     const d = formData || {};
     const appendIf = (k, v) => {
-      if (v !== undefined && v !== null && `${v}`.trim() !== "") f.append(k, v);
+      if (v !== undefined && v !== null && `${v}`.trim() !== "") fd.append(k, v);
     };
 
+    appendIf("id", d.id); // 👈 puede venir vacío
     appendIf("name", d.name);
     appendIf("description", d.description);
     appendIf("price", d.price);
     appendIf("stock", d.stock);
     appendIf("category_id", d.category_id);
 
-    // imágenes
-    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => f.append("images[]", file));
+    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => fd.append("images[]", file));
+    (d.selected_address_ids || []).forEach(id => fd.append("address_ids[]", id));
 
-    // localidades existentes
-    (d.selected_address_ids || []).forEach(id => f.append("address_ids[]", id));
-
-    // nueva localidad
     const a = d.new_address || {};
     const hasSingle = a.recipient || a.phone || a.street;
     if (hasSingle) {
@@ -247,37 +247,51 @@ export async function createProduct(formData, onProgress) {
       appendIf("address[references]", a.references);
     }
 
-    // pivote general
     const dft = d.pivot_default || {};
-    if (dft.stock !== "") f.append("pivot[stock]", String(dft.stock));
-    f.append("pivot[is_active]", dft.is_active ? "1" : "0");
-    if (dft.available_from) f.append("pivot[available_from]", dft.available_from);
-    if (dft.available_to) f.append("pivot[available_to]", dft.available_to);
-    if (dft.notes) f.append("pivot[notes]", dft.notes);
+    if (dft.stock !== "") fd.append("pivot[stock]", String(dft.stock));
+    fd.append("pivot[is_active]", dft.is_active ? "1" : "0");
+    if (dft.available_from) fd.append("pivot[available_from]", dft.available_from);
+    if (dft.available_to) fd.append("pivot[available_to]", dft.available_to);
+    if (dft.notes) fd.append("pivot[notes]", dft.notes);
 
-    // pivotes por sucursal
     (d.pivots || []).forEach(p => {
       const base = `pivots[${p.address_id}]`;
-      if (p.stock !== "") f.append(`${base}[stock]`, String(p.stock));
-      f.append(`${base}[is_active]`, p.is_active ? "1" : "0");
-      if (p.available_from) f.append(`${base}[available_from]`, p.available_from);
-      if (p.available_to) f.append(`${base}[available_to]`, p.available_to);
-      if (p.notes) f.append(`${base}[notes]`, p.notes);
+      if (p.stock !== "") fd.append(`${base}[stock]`, String(p.stock));
+      fd.append(`${base}[is_active]`, p.is_active ? "1" : "0");
+      if (p.available_from) fd.append(`${base}[available_from]`, p.available_from);
+      if (p.available_to) fd.append(`${base}[available_to]`, p.available_to);
+      if (p.notes) fd.append(`${base}[notes]`, p.notes);
     });
+  }
 
-    return f;
-  })();
+  // 👇 Detecta actualización con FormData.get('id')
+  const rawId = fd.get("id");        // string | null
+  const id = rawId && `${rawId}`.trim() !== "" ? rawId : null;
 
-  const res = await axiosClient.post("producto", fd, {
+  // Para updates, borra el id del body si tu backend lo quiere solo en URL
+  if (id) fd.delete("id");
+
+  // Define endpoint/método para Laravel
+  let url = "producto";
+  let config = {
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (!onProgress) return;
       const percent = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
       onProgress({ percent });
     },
-  });
+  };
+
+  if (id) {
+    // Opción A: override por POST
+    url = `producto/${id}`;
+    fd.append("_method", "PUT");
+  }
+
+  const res = await axiosClient.post(url, fd, config);
   return res.data;
 }
+
 
 
 //Categorias

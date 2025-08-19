@@ -83,7 +83,7 @@ const FooterOne = () => {
                     <Link to="/register" className="footer-lists__link">Registro</Link>
                   </li>
                   <li className="footer-lists__item">
-                    <Link to="/contact" className="footer-lists__link">Contáctanos</Link>
+                    <Link to="/donaciones" className="footer-lists__link">Contáctanos</Link>
                   </li>
                 </ul>
               </div>
@@ -95,7 +95,7 @@ const FooterOne = () => {
                 <p className="footer-widget__desc">
                   Ayúdanos a seguir mejorando para ti. Puedes contribuir con lo que gustes.
                 </p>
-                <form action="#" className="mt-4 subscribe-box d-flex align-items-center flex-column gap-2">
+                <form action="/donaciones" className="mt-4 subscribe-box d-flex align-items-center flex-column gap-2">
                   <button type="submit" className="btn btn-main btn-lg w-100 pill">
                     Donar Ahora
                   </button>
@@ -137,7 +137,7 @@ const FooterOne = () => {
               >
                 Políticas de Privacidad
               </button>
-              <Link to="/contact" className="footer-link font-14">Contacto</Link>
+              <Link to="/donaciones" className="footer-link font-14">Contacto</Link>
             </div>
           </div>
         </div>

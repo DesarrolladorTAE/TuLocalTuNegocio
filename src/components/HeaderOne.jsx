@@ -170,8 +170,8 @@ const HeaderOne = () => {
                 </li> */}
 
                 <li className="nav-menu__item">
-                  <NavLink to="/contact" className="nav-menu__link">
-                    Contactanos
+                  <NavLink to="/donaciones" className="nav-menu__link">
+                    Donaciones
                   </NavLink>
                 </li>
               </ul>
@@ -337,7 +337,7 @@ const HeaderOne = () => {
               </li>
 
               <li className="nav-menu__item">
-                <NavLink to="/contact" className="nav-menu__link">
+                <NavLink to="/donaciones" className="nav-menu__link">
                   Contact
                 </NavLink>
               </li>
