@@ -14,7 +14,6 @@ const Donation = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [anonymous, setAnonymous] = useState(false);
-  const [methods, setMethods] = useState({ card: true, spei: false, cash: false });
   const [message, setMessage] = useState("Apoyo a la causa");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -26,13 +25,8 @@ const Donation = () => {
     return amount;
   }, [custom, amount]);
 
-  const toggleMethod = (k) =>
-    setMethods((m) => ({ ...m, [k]: !m[k] }));
-
-  const selectedMethods = useMemo(
-    () => Object.entries(methods).filter(([, v]) => v).map(([k]) => k),
-    [methods]
-  );
+  // const toggleMethod = (k) =>
+  //   setMethods((m) => ({ ...m, [k]: !m[k] }));
 
   const handleDonate = async (e) => {
     e.preventDefault();
@@ -40,10 +34,6 @@ const Donation = () => {
 
     if (!effectiveAmount || effectiveAmount < 1) {
       setErr("Ingresa un monto válido.");
-      return;
-    }
-    if (selectedMethods.length === 0) {
-      setErr("Selecciona al menos un método de pago.");
       return;
     }
 
@@ -54,11 +44,11 @@ const Donation = () => {
       const payload = {
         amount: Math.round(effectiveAmount * 100), // a centavos
         description: message || "Donación",
-        publicKey: import.meta.env.VITE_CONEKTA_PUBLIC_KEY,    // ⚠️ sólo pública
-        privateKey: import.meta.env.VITE_CONEKTA_PRIVATE_KEY,  // ⚠️ no recomendado
+        // publicKey: import.meta.env.VITE_CONEKTA_PUBLIC_KEY,    // ⚠️ sólo pública
+        // privateKey: import.meta.env.VITE_CONEKTA_PRIVATE_KEY,  // ⚠️ no recomendado
         success_url: `${window.location.origin}/donaciones`,
         failure_url: `${window.location.origin}/donaciones`,
-        allowed_payment_methods: selectedMethods, // ['card','spei','cash']
+        // allowed_payment_methods: selectedMethods, // ['card','spei','cash']
         customer: anonymous
           ? {}
           : {
@@ -250,7 +240,7 @@ const Donation = () => {
                     </div>
 
                     {/* Métodos de pago */}
-                    <div className="col-12">
+                    {/* <div className="col-12">
                       <label className="form-label mb-2 font-18 font-heading fw-600">
                         Método de pago
                       </label>
@@ -286,7 +276,7 @@ const Donation = () => {
                           <span>Efectivo (OXXO)</span>
                         </label>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Mensaje/causa */}
                     <div className="col-sm-12">

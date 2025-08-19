@@ -1,68 +1,68 @@
-
 /* Font Family*/
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Jost:ital,wght@0,100..900;1,100..900&display=swap'); 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Jost:ital,wght@0,100..900;1,100..900&display=swap');
 
 /* ========================= Variable Css Start ======================== */
-:root {    
+:root {
 
   /* Font Family Variable */
   --heading-font: "Jost", sans-serif;
   --body-font: "Inter", sans-serif;
-  
+
   /* Font Size Variable Start */
   --heading-one: clamp(1.875rem, -2.0093rem + 8.3527vw, 4.25rem); // Min:34px - Max:68px
   --heading-two: clamp(1.75rem, -0.8115rem + 5.3364vw, 3.1875rem); // Min: 28px - Max: 51px
-  --heading-three: clamp(1.5rem, -0.0592rem + 3.2483vw, 2.375rem);  // Min: 24px - Max: 38px
+  --heading-three: clamp(1.5rem, -0.0592rem + 3.2483vw, 2.375rem); // Min: 24px - Max: 38px
   --heading-four: clamp(1.375rem, 0.7068rem + 1.3921vw, 1.75rem); // Min: 22px - Max: 28px
   --heading-five: clamp(1.125rem, 0.4568rem + 1.3921vw, 1.5rem); // Min: 18px - Max: 24px
-  --heading-six: clamp(1rem, 0.7773rem + 0.464vw, 1.125rem);; // Min: 16px Max 18px
+  --heading-six: clamp(1rem, 0.7773rem + 0.464vw, 1.125rem);
+  ; // Min: 16px Max 18px
   /* Font Size End */
 
- /* Gray Color */
-  --gray-one: 0 0% 14%; 
-  --gray-two: 0 0% 31%; 
-  --gray-three: 0 0% 51%; 
-  --gray-four: 0 0% 74%; 
-  --gray-five: 252 10% 90%; 
-  --gray-six: 252 10% 90%; 
-  --gray-seven: 210 25% 97%; 
+  /* Gray Color */
+  --gray-one: 0 0% 14%;
+  --gray-two: 0 0% 31%;
+  --gray-three: 0 0% 51%;
+  --gray-four: 0 0% 74%;
+  --gray-five: 252 10% 90%;
+  --gray-six: 252 10% 90%;
+  --gray-seven: 210 25% 97%;
 
   /* White Color */
   --white: 0 0% 100%;
   --static-white: 0 0% 100%;
   --white-one: 236 13% 77%;
   --static-white-one: 236 13% 77%;
-  
+
   /* Light Color */
   --light-h: 0;
   --light-s: 1%;
   --light-l: 53%;
   --light: var(--light-h) var(--light-s) var(--light-l);
 
-  /* Black Color */ 
+  /* Black Color */
   --black-h: 234;
   --black-s: 100%;
   --black-l: 7%;
   --black: var(--black-h) var(--black-s) var(--black-l);
 
-  /* Black Color */ 
+  /* Black Color */
   --static-black-h: 234;
   --static-black-s: 100%;
   --static-black-l: 7%;
   --static-black: var(--static-black-h) var(--static-black-s) var(--static-black-l);
 
-  /* Black Two Color */ 
+  /* Black Two Color */
   --black-two-h: 234;
   --black-two-s: 69%;
   --black-two-l: 9%;
   --black-two: var(--black-two-h) var(--black-two-s) var(--black-two-l);
 
-  /* Black three Color */ 
+  /* Black three Color */
   --black-three-h: 235;
   --black-three-s: 5%;
   --black-three-l: 43%;
   --black-three: var(--black-three-h) var(--black-three-s) var(--black-three-l);
-  
+
   --heading-color: var(--black);
   --body-color: var(--black-three);
   --body-bg: 0 0% 100%;
@@ -71,42 +71,44 @@
 
   /* Card box shadow */
   --box-shadow: 0px 20px 30px 0px rgba(197, 196, 201, 0.25);
-  --box-shadow-lg: 0 1rem 3rem rgba(0,0,0,.1); 
-  
-  
+  --box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, .1);
+
+
   /* Color Variables Start */
-  --main-gradient: linear-gradient(312deg, hsl(var(--main)) 5.38%, hsl(var(--main-two)) 113.21%);
-  --main-gradient-rev: linear-gradient(312deg, hsl(var(--main-two)) 5.38%, hsl(var(--main)) 113.21%);
+  --main-gradient: linear-gradient(90deg, #f5c432 0%, #a27a00 100%);
+  --main-gradient-rev: linear-gradient(90deg, #a27a00 0%, #f5c432 100%);
 
   --main-gradient-two: linear-gradient(305deg, hsl(var(--main)) 0%, hsl(var(--main-three)) 100%);
-  
+
   /* ========================= Main Color ============================= */
-  --main-h: 253;  
-  --main-s: 88%;
-  --main-l: 58%;
+  --main-h: 45;
+  /* tono dorado */
+  --main-s: 100%;
+  --main-l: 40%;
+  /* brillo */
   --main: var(--main-h) var(--main-s) var(--main-l);
-  
+
   /* Main Lighten */
-  --main-l-100: var(--main-h) calc(var(--main-s)) calc(var(--main-l) + (100% - var(--main-l)) * 0.1);
-  --main-l-200: var(--main-h) calc(var(--main-s)) calc(var(--main-l) + (100% - var(--main-l)) * 0.2);
-  --main-l-300: var(--main-h) calc(var(--main-s)) calc(var(--main-l) + (100% - var(--main-l)) * 0.3);
-  --main-l-400: var(--main-h) calc(var(--main-s)) calc(var(--main-l) + (100% - var(--main-l)) * 0.4);
-  --main-l-500: var(--main-h) calc(var(--main-s)) calc(var(--main-l) + (100% - var(--main-l)) * 0.5);
+  --main-l-100: var(--main-h) var(--main-s) 50%;
+  --main-l-200: var(--main-h) var(--main-s) 60%;
+  --main-l-300: var(--main-h) var(--main-s) 70%;
+  --main-l-400: var(--main-h) var(--main-s) 80%;
+  --main-l-500: var(--main-h) var(--main-s) 90%;
 
   /* Main Darken  */
-  --main-d-100: var(--main-h) var(--main-s) calc(var(--main-l) - var(--main-l) * 0.1);
-  --main-d-200: var(--main-h) var(--main-s) calc(var(--main-l) - var(--main-l) * 0.2);
-  --main-d-300: var(--main-h) var(--main-s) calc(var(--main-l) - var(--main-l) * 0.3);
-  --main-d-400: var(--main-h) var(--main-s) calc(var(--main-l) - var(--main-l) * 0.4);
-  --main-d-500: var(--main-h) var(--main-s) calc(var(--main-l) - var(--main-l) * 0.5);
+  --main-d-100: var(--main-h) var(--main-s) 35%;
+  --main-d-200: var(--main-h) var(--main-s) 30%;
+  --main-d-300: var(--main-h) var(--main-s) 25%;
+  --main-d-400: var(--main-h) var(--main-s) 20%;
+  --main-d-500: var(--main-h) var(--main-s) 15%;
   /* ========================= Main Color ============================= */
 
   /* ========================= Main two Color ============================= */
-  --main-two-h: 184;
-  --main-two-s: 96%;
-  --main-two-l: 48%;
+  --main-two-h: 0;
+  --main-two-s: 0%;
+  --main-two-l: 0%;
   --main-two: var(--main-two-h) var(--main-two-s) var(--main-two-l);
-  
+
   /* Main-two Lighten */
   --main-two-l-100: var(--main-two-h) calc(var(--main-two-s)) calc(var(--main-two-l) + (100% - var(--main-two-l)) * 0.1);
   --main-two-l-200: var(--main-two-h) calc(var(--main-two-s)) calc(var(--main-two-l) + (100% - var(--main-two-l)) * 0.2);
@@ -123,11 +125,10 @@
   /* ========================= Main Three Color ============================= */
 
   /* ========================= Main three Color ============================= */
-  --main-three-h: 306;
-  --main-three-s: 100%;
-  --main-three-l: 68%;
+  --main-three-h: 0;
+  --main-three-s: 0%;
+  --main-three-l: 25%;
   --main-three: var(--main-three-h) var(--main-three-s) var(--main-three-l);
-  
   /* Main-three Lighten */
   --main-three-l-100: var(--main-three-h) calc(var(--main-three-s)) calc(var(--main-three-l) + (100% - var(--main-three-l)) * 0.1);
   --main-three-l-200: var(--main-three-h) calc(var(--main-three-s)) calc(var(--main-three-l) + (100% - var(--main-three-l)) * 0.2);
@@ -148,7 +149,7 @@
   --info-s: 84%;
   --info-l: 56%;
   --info: var(--info-h) var(--info-s) var(--info-l);
-  
+
   /* info Lighten */
   --info-l-100: var(--info-h) calc(var(--info-s)) calc(var(--info-l) + (100% - var(--info-l)) * 0.1);
   --info-l-200: var(--info-h) calc(var(--info-s)) calc(var(--info-l) + (100% - var(--info-l)) * 0.2);
@@ -169,7 +170,7 @@
   --success-s: 63%;
   --success-l: 42%;
   --success: var(--success-h) var(--success-s) var(--success-l);
-  
+
   /* success Lighten */
   --success-l-100: var(--success-h) calc(var(--success-s)) calc(var(--success-l) + (100% - var(--success-l)) * 0.1);
   --success-l-200: var(--success-h) calc(var(--success-s)) calc(var(--success-l) + (100% - var(--success-l)) * 0.2);
@@ -190,7 +191,7 @@
   --waring-s: 74%;
   --waring-l: 56%;
   --waring: var(--waring-h) var(--waring-s) var(--waring-l);
-  
+
   /* waring Lighten */
   --waring-l-100: var(--waring-h) calc(var(--waring-s)) calc(var(--waring-l) + (100% - var(--waring-l)) * 0.1);
   --waring-l-200: var(--waring-h) calc(var(--waring-s)) calc(var(--waring-l) + (100% - var(--waring-l)) * 0.2);
@@ -211,7 +212,7 @@
   --danger-s: 79%;
   --danger-l: 63%;
   --danger: var(--danger-h) var(--danger-s) var(--danger-l);
-  
+
   /* danger Lighten */
   --danger-l-100: var(--danger-h) calc(var(--danger-s)) calc(var(--danger-l) + (100% - var(--danger-l)) * 0.1);
   --danger-l-200: var(--danger-h) calc(var(--danger-s)) calc(var(--danger-l) + (100% - var(--danger-l)) * 0.2);
@@ -239,7 +240,7 @@
   --black-two-h: 234;
   --black-two-s: 36%;
   --black-two-l: 16%;
-  
+
   --black-three-h: 233;
   --black-three-s: 25%;
   --black-three-l: 20%;
@@ -251,13 +252,13 @@
   --black-h: 0;
   --black-s: 0%;
   --black-l: 100%;
-  
+
   --black-three-h: 236;
   --black-three-s: 13%;
   --black-three-l: 77%;
-  
-  --gray-five: 234 13% 29%; 
-  
+
+  --gray-five: 234 13% 29%;
+
   --border-color: 234 13% 29%;
   --white-one: 234 13% 29%;
 

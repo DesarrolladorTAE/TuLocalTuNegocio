@@ -5,9 +5,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  Typography,
+  Button
 } from "@mui/material";
+import TerminosCondicionesContent from "./TerminosCondiciones";
+import AvisoPrivacidadContent from "./PoliticasPrivacidad";
 
 const FooterOne = () => {
   const [openTC, setOpenTC] = useState(false);
@@ -154,22 +155,7 @@ const FooterOne = () => {
       >
         <DialogTitle>Términos y Condiciones</DialogTitle>
         <DialogContent dividers sx={{ maxHeight: "70vh" }}>
-          <Typography variant="body2" paragraph>
-            Bienvenido a Tulocaltunego.com. Estos Términos y Condiciones regulan el uso del portal por parte de los USUARIOS.
-            Al registrarte o utilizar los servicios aceptas lo aquí dispuesto.
-          </Typography>
-          <Typography variant="body2" paragraph component="div">
-            <ul className="mb-0">
-              <li>Servicios gratuitos por 6 meses; después, inscripción desde $120 MXN por categoría.</li>
-              <li>Debes proporcionar datos personales verídicos y mantenerlos actualizados.</li>
-              <li>No se garantiza la veracidad del contenido publicado por usuarios; actúa con prudencia.</li>
-              <li>Prohibido publicar contenido ilícito, engañoso, ofensivo o que infrinja derechos.</li>
-              <li>Respeta la propiedad intelectual; no reproduzcas ni explotes contenidos sin autorización.</li>
-            </ul>
-          </Typography>
-          <Typography variant="body2">
-            Si deseas, podemos mostrar aquí la versión completa del documento.
-          </Typography>
+          <TerminosCondicionesContent />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenTC(false)}>Cerrar</Button>
@@ -187,21 +173,7 @@ const FooterOne = () => {
       >
         <DialogTitle>Aviso de Privacidad</DialogTitle>
         <DialogContent dividers sx={{ maxHeight: "70vh" }}>
-          <Typography variant="body2" paragraph>
-            Somos responsables del uso y protección de tus datos conforme a la Ley Federal de Protección de Datos Personales.
-          </Typography>
-          <Typography variant="body2" paragraph component="div">
-            <strong>Fines:</strong>
-            <ul className="mb-0">
-              <li>Registro en la plataforma, procesamiento de servicios y pagos.</li>
-              <li>Atención a clientes y soporte.</li>
-              <li>Envío de promociones y novedades (opt-in).</li>
-            </ul>
-          </Typography>
-          <Typography variant="body2" paragraph>
-            Puedes ejercer tus derechos ARCO o revocar consentimiento escribiendo a{" "}
-            <a href="mailto:contacto@tulocaltunego.com">contacto@tulocaltunego.com</a>.
-          </Typography>
+          <AvisoPrivacidadContent />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenPrivacidad(false)}>Cerrar</Button>

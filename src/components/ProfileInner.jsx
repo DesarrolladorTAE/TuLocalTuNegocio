@@ -8,6 +8,7 @@ import Alert from "@mui/material/Alert";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
+
 const ProfileInner = () => {
   const userLS = JSON.parse(localStorage.getItem("user"));
 
@@ -313,18 +314,20 @@ const ProfileInner = () => {
 
       {/* Cover */}
       <div className="cover-photo position-relative z-index-1 overflow-hidden">
-        <div className="avatar-upload">
-          <div className="avatar-edit">
-            <input type="file" id="imageUploadTwo" accept=".png, .jpg, .jpeg" />
-            <label htmlFor="imageUploadTwo">
-              <span className="icon"><img src="assets/images/icons/camera-two.svg" alt="" /></span>
-              <span className="text">Change Cover</span>
-            </label>
-          </div>
-          <div className="avatar-preview">
-            <div id="imagePreviewTwo"></div>
-          </div>
+
+        <div className="cover-photo">
+          <img
+            src="https://taeconta.com/api/public/api/imagenPlantilla/20250819_122015.jpg"
+            alt="Cover"
+            style={{
+              width: "100%",
+              height: "250px",
+              objectFit: "cover",
+              borderRadius: "12px"
+            }}
+          />
         </div>
+
       </div>
 
       <div className="dashboard-body__content profile-content-wrapper z-index-1 position-relative mt--100">

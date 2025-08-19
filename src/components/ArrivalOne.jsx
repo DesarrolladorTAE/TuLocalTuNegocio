@@ -173,13 +173,13 @@ export default function ArrivalOne() {
                             className="cover-img"
                           />
                         </Link>
-                        <button
+                        {/* <button
                           type="button"
                           className="product-item__wishlist"
                           aria-label="Wishlist"
                         >
                           <i className="fas fa-heart" />
-                        </button>
+                        </button> */}
                       </div>
 
                       <div className="product-item__content">

@@ -71,18 +71,34 @@ const ProductDetails = ({ product }) => {
   const vendor = product.vendor || {};
   const category = product.category || {};
 
+  function encodeWhatsApp(text) {
+    return text
+      .replace(/\n/g, "%0A")   // solo reemplazar saltos de línea
+      .replace(/ /g, "%20");   // y espacios
+  }
+
   const handleEnviar = (e) => {
     e.preventDefault();
     if (!mensaje.trim()) return;
 
-    // Sanitizar mensaje para URL
-    const textoCodificado = encodeURIComponent(mensaje);
-    // Asegúrate de que phone incluya código de país (ej. 52 para México)
+    let baseUrl = 'https://tulocaltunego.com/'
+
+    let baseMensaje = `¡Hola! 👋\n\nMe interesa el producto:\n` +
+      `📦 *${product.name}*\n` +
+      `Categoría: ${product.category.name}\n\n` +
+      `🔗 Link: ${baseUrl}product-details/${product.id}\n\n`;
+
+    // Agregar mensaje extra escrito por el usuario
+    baseMensaje += `${mensaje}`;
+
+    // Codificar para URL
+    const textoCodificado = encodeWhatsApp(baseMensaje);
+
+    // Generar enlace de WhatsApp
     const enlace = `https://wa.me/${vendor.phone}?text=${textoCodificado}`;
 
     window.open(enlace, "_blank");
   };
-
 
   return (
     <div className="product-details mt-32 padding-b-120">

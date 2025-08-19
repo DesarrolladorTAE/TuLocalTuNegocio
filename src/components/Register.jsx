@@ -9,13 +9,21 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useForm } from "react-hook-form";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import PolicyOutlinedIcon from "@mui/icons-material/PolicyOutlined";
 
+import TerminosCondicionesContent from "./TerminosCondiciones";
+import AvisoPrivacidadContent from "./PoliticasPrivacidad";
 const Register = () => {
   const navigate = useNavigate();
 
   // Toggles de contraseña
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [openTC, setOpenTC] = useState(false);
+  const [openPriv, setOpenPriv] = useState(false);
+
 
   // Snackbar MUI
   const [snack, setSnack] = useState({
@@ -333,22 +341,50 @@ const Register = () => {
 
                 {/* Términos */}
                 <div className="col-12">
-                  <div className="common-check my-2">
+                  <div className="d-flex align-items-center">
+                    {/* Checkbox */}
                     <input
-                      className={`form-check-input ${errors.terminos_aceptados ? "is-invalid" : ""}`}
+                      className={`form-check-input me-2 ${errors.terminos_aceptados ? "is-invalid" : ""}`}
                       type="checkbox"
                       id="agree"
                       disabled={isSubmitting}
                       {...register("terminos_aceptados", rules.terminos_aceptados)}
                     />
-                    <label className="form-check-label mb-0 fw-400 font-16 text-body" htmlFor="agree">
-                      Acepto los Términos y Condiciones
+
+                    {/* Texto + enlaces en una sola línea */}
+                    <label
+                      className="form-check-label mb-0 fw-400 font-16 text-body"
+                      htmlFor="agree"
+                    >
+                      Acepto los{" "}
+                      <button
+                        type="button"
+                        className="btn-as-link fw-600"
+                        onClick={() => setOpenTC(true)}
+                        disabled={isSubmitting}
+                      >
+                        Términos y Condiciones
+                      </button>{" "}
+                      y el{" "}
+                      <button
+                        type="button"
+                        className="btn-as-link fw-600"
+                        onClick={() => setOpenPriv(true)}
+                        disabled={isSubmitting}
+                      >
+                        Aviso de Privacidad
+                      </button>
                     </label>
                   </div>
+
+                  {/* Error */}
                   {errors.terminos_aceptados && (
-                    <small className="text-danger">{errors.terminos_aceptados.message}</small>
+                    <small className="text-danger d-block mt-1">
+                      {errors.terminos_aceptados.message}
+                    </small>
                   )}
                 </div>
+
 
                 {/* Submit */}
                 <div className="col-12">
@@ -369,6 +405,39 @@ const Register = () => {
           </div>
         </div>
       </section>
+
+      <Dialog open={openTC} onClose={() => setOpenTC(false)} maxWidth="md" fullWidth keepMounted scroll="paper">
+        <DialogTitle className="d-flex align-items-center gap-2">
+          <ArticleOutlinedIcon fontSize="small" />
+          Términos y Condiciones
+        </DialogTitle>
+
+        {/* Barra superior con buscador (ya dentro del componente) + botón PDF a la derecha */}
+        <DialogContent dividers sx={{ maxHeight: "70vh" }}>
+          <TerminosCondicionesContent />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenTC(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openPriv} onClose={() => setOpenPriv(false)} maxWidth="md" fullWidth keepMounted scroll="paper">
+        <DialogTitle className="d-flex align-items-center gap-2">
+          <PolicyOutlinedIcon fontSize="small" />
+          Aviso de Privacidad
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ maxHeight: "70vh" }}>
+          <AvisoPrivacidadContent />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenPriv(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+
 
       {/* Snackbar MUI */}
       <Snackbar
