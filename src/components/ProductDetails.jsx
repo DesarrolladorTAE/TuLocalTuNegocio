@@ -81,24 +81,23 @@ const ProductDetails = ({ product }) => {
     e.preventDefault();
     if (!mensaje.trim()) return;
 
-    let baseUrl = 'https://tulocaltunego.com/'
+    const baseUrl = 'https://tulocaltunego.com/';
+    const urlProducto = `${baseUrl}product-details/${product.id}`;
 
-    let baseMensaje = `¡Hola! 👋\n\nMe interesa el producto:\n` +
+    // PRIMERA línea solo el link => ayuda a preview grande
+    let baseMensaje =
+      `${urlProducto}\n\n` +
+      `¡Hola! 👋\n` +
+      `Me interesa el producto:\n` +
       `📦 *${product.name}*\n` +
-      `Categoría: ${product.category.name}\n\n` +
-      `🔗 Link: ${baseUrl}product-details/${product.id}\n\n`;
+      `Categoría: ${product.category.name}\n\n`;
 
-    // Agregar mensaje extra escrito por el usuario
-    baseMensaje += `${mensaje}`;
+    baseMensaje += mensaje;
 
-    // Codificar para URL
-    const textoCodificado = encodeWhatsApp(baseMensaje);
-
-    // Generar enlace de WhatsApp
-    const enlace = `https://wa.me/${vendor.phone}?text=${textoCodificado}`;
-
+    const enlace = `https://wa.me/${vendor.phone}?text=${encodeWhatsApp(baseMensaje)}`;
     window.open(enlace, "_blank");
   };
+
 
   return (
     <div className="product-details mt-32 padding-b-120">
