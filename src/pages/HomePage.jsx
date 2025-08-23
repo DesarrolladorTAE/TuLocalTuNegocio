@@ -15,51 +15,52 @@ import ArrivalOne from "../components/ArrivalOne";
 import FooterOne from "../components/FooterOne";
 
 const HomePage = () => {
-  
+
   return (
     <section className="change-gradient">
-    {/* Preloader */}
-    <Preloader />
+      {/* Preloader */}
+      <Preloader />
 
-    {/* SaleOffer */}
-    {/* <SaleOffer /> */}
+      {/* SaleOffer */}
+      {/* <SaleOffer /> */}
+      {/* HeaderOne */}
+      <HeaderOne />
 
-    {/* HeaderOne */}
-    <HeaderOne />
+      {/* ArrivalOne */}
+      <ArrivalOne />
+      
+      {/* PopularOne */}
+      <PopularOne />
 
-    {/* BannerOne */}
-    <BannerOne />
 
-    {/* PopularOne */}
-    <PopularOne />
 
-    {/* ArrivalOne */}
-    <ArrivalOne />
+      {/* BannerOne */}
+      <BannerOne />
 
-    {/* FeaturedOne */}
-    {/* <FeaturedOne  */}
+      {/* FeaturedOne */}
+      {/* <FeaturedOne  */}
 
-    {/* SellingOne */}
-    {/* <SellingOne /> */}
+      {/* SellingOne */}
+      {/* <SellingOne /> */}
 
-    {/* FeaturedAuthor */}
-    {/* <FeaturedAuthor /> */}
+      {/* FeaturedAuthor */}
+      {/* <FeaturedAuthor /> */}
 
-    {/* PerformanceAuthor */}
-    {/* <PerformanceAuthor /> */}
+      {/* PerformanceAuthor */}
+      {/* <PerformanceAuthor /> */}
 
-    {/* BlogOne */}
-    {/* <BlogOne /> */}
+      {/* BlogOne */}
+      {/* <BlogOne /> */}
 
-    {/* BecomeSellerOne */}
-    {/* <BecomeSellerOne /> */}
+      {/* BecomeSellerOne */}
+      {/* <BecomeSellerOne /> */}
 
-    {/* BrandSectionOne */}
-    {/* <BrandSectionOne /> */}
+      {/* BrandSectionOne */}
+      {/* <BrandSectionOne /> */}
 
-    {/* FooterOne */}
-    <FooterOne />
-  </section>
+      {/* FooterOne */}
+      <FooterOne />
+    </section>
   );
 };
 

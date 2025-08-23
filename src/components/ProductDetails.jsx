@@ -81,8 +81,8 @@ const ProductDetails = ({ product }) => {
     e.preventDefault();
     if (!mensaje.trim()) return;
 
-    const baseUrl = 'https://tulocaltunego.com/';
-    const urlProducto = `${baseUrl}product-details/${product.id}`;
+    const baseUrl = 'https://tulocaltunego.com/api/graph/producto/';
+    const urlProducto = `${baseUrl}${product.id}`;
 
     // PRIMERA línea solo el link => ayuda a preview grande
     let baseMensaje =
