@@ -26,8 +26,12 @@ const FooterOne = () => {
             <div className="col-xl-3 col-sm-6">
               <div className="footer-widget">
                 <div className="footer-widget__logo">
-                  <Link to="/">
-                    <img src="/assets/images/logo/white-logo-two.png" alt="TuLocalTuNego" />
+                  <Link to="/" className="footer-logo-link">
+                    <img
+                      src="/assets/images/logo/white-logo-two.png"
+                      alt="TuLocalTuNego"
+                      className="footer-logo"
+                    />
                   </Link>
                 </div>
                 <p className="footer-widget__desc">
@@ -38,16 +42,16 @@ const FooterOne = () => {
                 <div className="footer-widget__social">
                   <ul className="social-icon-list">
                     <li className="social-icon-list__item">
-                      <a href="https://www.facebook.com" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
-                        <i className="fab fa-facebook-f" />
+                      <a href="#" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
+                        <i className="fab fa-instagram" />
                       </a>
                     </li>
                     <li className="social-icon-list__item">
-                      <a href="https://www.twitter.com" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
-                        <i className="fab fa-twitter" />
+                      <a href="#" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
+                        <i className="fab fa-tiktok" />
                       </a>
                     </li>
-                    <li className="social-icon-list__item">
+                    {/* <li className="social-icon-list__item">
                       <a href="https://www.linkedin.com" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
                         <i className="fab fa-linkedin-in" />
                       </a>
@@ -61,7 +65,7 @@ const FooterOne = () => {
                       <a href="https://www.youtube.com" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
                         <i className="fab fa-youtube" />
                       </a>
-                    </li>
+                    </li> */}
                   </ul>
                 </div>
               </div>

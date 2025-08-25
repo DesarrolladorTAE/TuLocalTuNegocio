@@ -15,7 +15,7 @@ function formatoFechaRegistro(iso) {
 const BreadcrumbThree = ({
   title = "",
   trail = [],
-  entity = null,
+  entity,
   showNewProduct = true,
   isVendorView = false,
   onUpdated,
@@ -62,8 +62,9 @@ const BreadcrumbThree = ({
 
   useEffect(() => {
     setLocalName(entity.name)
-    console.log('nombre: ', entity.name)
-  }, []);
+    // console.log('persona: ', entity)
+    // console.log('entity: ', entity.name)
+  }, [entity]);
 
   const triggerAvatar = () => fileRef.current?.click();
 

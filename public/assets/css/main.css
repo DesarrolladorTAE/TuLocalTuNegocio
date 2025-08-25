@@ -9122,3 +9122,47 @@ input[type=number] {
 /* ============================ Dark Version Css End =============================== */
 /*# sourceMappingURL=main.css.map */
 
+/* Base */
+.mobile-menu__logo {
+  display: inline-flex;
+  align-items: center;
+}
+.mobile-menu__logo .logo-img {
+  display: block;
+  height: 40px;      /* desktop/tablet */
+  width: auto;       /* evita deformación */
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .mobile-menu__logo .logo-img {
+    height: 28px;    /* más chico en mobile */
+    width: auto;     /* mantiene proporción */
+  }
+}
+
+.footer-logo-link{
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-logo{
+  display: block;
+  height: 50px;      /* tamaño en footer */
+  width: auto;       /* mantiene proporción */
+  object-fit: contain;
+  max-width: 100%;
+}
+
+/* si quieres un poco más grande en pantallas >576px */
+@media (min-width: 576px){
+  .footer-logo{ height: 50px; }
+}
+
+/* Si hay reglas globales que lo estiren, forza con !important */
+.footer-widget__logo img.footer-logo{
+  width: auto !important;
+  height: 50px !important;
+}

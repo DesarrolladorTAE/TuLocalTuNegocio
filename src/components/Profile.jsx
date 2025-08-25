@@ -297,6 +297,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       setEditingProductId?.(null); // si usas banderita visual opcional
       onCreated?.(resp);
       refreshDatos(entity.id);
+      onGoToEditTab('products')
     } catch (err) {
       const errors422 = err?.response?.data?.errors;
       const isUpdate = !!data.id;
@@ -714,6 +715,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       setSavingContact(false);
     }
   };
+
+  const abrirDisp = false;
 
   return (
     <section
@@ -1292,46 +1295,140 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                     data-bs-parent="#accNuevaLocalidad"
                                   >
                                     <div className="accordion-body">
-                                      <small className="text-muted d-block mb-2">
-                                        Si llenas esta sección, se requiere <b>Destinatario</b>, <b>Teléfono</b> y <b>Calle</b>.
-                                      </small>
 
-                                      <div className="row g-2">
-                                        {[
-                                          ["recipient", "Destinatario *"],
-                                          ["phone", "Teléfono *"],
-                                          ["street", "Calle *"],
-                                          ["ext_no", "No. Ext"],
-                                          ["int_no", "No. Int"],
-                                          ["neighborhood", "Colonia"],
-                                          ["city", "Ciudad"],
-                                          ["state", "Estado"],
-                                          ["zip", "C.P."],
-                                        ].map(([k, label]) => (
-                                          <div className="col-sm-6" key={k}>
-                                            <label className="form-label">{label}</label>
-                                            <input
-                                              type="text"
-                                              className="common-input common-input--md border--color-dark bg--white"
-                                              disabled={!exigirNueva && !hasNewAddrInput}
-                                              {...register(`new_address.${k}`, {
-                                                required:
-                                                  exigirNueva && (k === "recipient" || k === "phone" || k === "street")
-                                                    ? "Este campo es obligatorio"
-                                                    : false,
-                                              })}
-                                            />
-                                            <FieldError error={errors?.new_address?.[k]} />
-                                          </div>
-                                        ))}
+                                      <div className="alert alert-primary py-2 mb-3">
+                                        Si llenas esta sección, se requiere <b>Destinatario</b>, <b>Teléfono</b> y <b>Calle</b>.
+                                      </div>
+
+                                      {/* Si quieres deshabilitar cuando no es obligatoria, usa esta bandera */}
+                                      {/** const disabled = !exigirNueva && !hasNewAddrInput; */}
+                                      {/* Para que se vea bien, usamos form-control (Bootstrap) */}
+                                      <div className="row g-3">
+                                        <div className="col-md-6">
+                                          <label className="form-label">Destinatario *</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Nombre de quien recibe"
+                                            // disabled={disabled}
+                                            {...register("new_address.recipient", {
+                                              required: exigirNueva ? "Este campo es obligatorio" : false,
+                                            })}
+                                          />
+                                          <FieldError error={errors?.new_address?.recipient} />
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label">Teléfono *</label>
+                                          <input
+                                            type="tel"
+                                            className="form-control"
+                                            placeholder="10 dígitos"
+                                            // disabled={disabled}
+                                            {...register("new_address.phone", {
+                                              required: exigirNueva ? "Este campo es obligatorio" : false,
+                                            })}
+                                          />
+                                          <FieldError error={errors?.new_address?.phone} />
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label">Calle *</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. Av. Reforma"
+                                            // disabled={disabled}
+                                            {...register("new_address.street", {
+                                              required: exigirNueva ? "Este campo es obligatorio" : false,
+                                            })}
+                                          />
+                                          <FieldError error={errors?.new_address?.street} />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                          <label className="form-label">No. Ext</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. 123"
+                                            // disabled={disabled}
+                                            {...register("new_address.ext_no")}
+                                          />
+                                          <FieldError error={errors?.new_address?.ext_no} />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                          <label className="form-label">No. Int</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. 4B"
+                                            // disabled={disabled}
+                                            {...register("new_address.int_no")}
+                                          />
+                                          <FieldError error={errors?.new_address?.int_no} />
+                                        </div>
+
+                                        <div className="col-md-6">
+                                          <label className="form-label">Colonia</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. Centro"
+                                            // disabled={disabled}
+                                            {...register("new_address.neighborhood")}
+                                          />
+                                          <FieldError error={errors?.new_address?.neighborhood} />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                          <label className="form-label">Ciudad</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. Puebla"
+                                            // disabled={disabled}
+                                            {...register("new_address.city")}
+                                          />
+                                          <FieldError error={errors?.new_address?.city} />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                          <label className="form-label">Estado</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej. Puebla"
+                                            // disabled={disabled}
+                                            {...register("new_address.state")}
+                                          />
+                                          <FieldError error={errors?.new_address?.state} />
+                                        </div>
+
+                                        <div className="col-md-3">
+                                          <label className="form-label">C.P.</label>
+                                          <input
+                                            type="text"
+                                            className="form-control"
+                                            inputMode="numeric"
+                                            placeholder="Ej. 72000"
+                                            // disabled={disabled}
+                                            {...register("new_address.zip")}
+                                          />
+                                          <FieldError error={errors?.new_address?.zip} />
+                                        </div>
 
                                         <div className="col-12">
                                           <label className="form-label">Referencias</label>
                                           <textarea
-                                            className="common-input common-input--md border--color-dark bg--white"
+                                            className="form-control"
+                                            rows={2}
                                             placeholder="Punto de referencia, horario, etc."
+                                            // disabled={disabled}
                                             {...register("new_address.references")}
                                           />
+                                          <FieldError error={errors?.new_address?.references} />
                                         </div>
                                       </div>
                                     </div>
@@ -1341,192 +1438,209 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                             </div>
 
 
+
                           </div>
                         </div>
                       </div>
 
                       {/* ================== Disponibilidad por sucursal ================== */}
-                      <div className="card common-card border border-gray-five overflow-hidden mb-24">
-                        <div className="card-header">
-                          <h6 className="title">Disponibilidad por sucursal</h6>
-                        </div>
+                      <div className="col-12 mb-4">
+                        <hr />
 
-                        <div className="card-body">
-                          {/* Nota introductoria para humanos */}
-                          <div className="p-3 rounded mb-3" style={{ background: "#f7f7fb", border: "1px solid rgba(0,0,0,.06)" }}>
-                            <strong>¿Para qué sirve?</strong>
-                            <div className="mt-1">
-                              Define <em>una sola regla</em> de stock y disponibilidad que se aplicará a
-                              <b> todas tus sucursales</b>. Si alguna sucursal es distinta (más/menos stock,
-                              fechas, inactiva), luego agregas esa <b>excepción</b> abajo.
-                            </div>
-                          </div>
+                        <div className="accordion" id="accDispSucursal">
+                          <div className="accordion-item ">
+                            <h2 className="accordion-header" id="headingDispSucursal">
+                              <button
+                                className={`accordion-button ${abrirDisp ? "" : "collapsed"}`}
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseDispSucursal"
+                                aria-expanded={abrirDisp ? "true" : "false"}
+                                aria-controls="collapseDispSucursal"
+                              >
+                                Disponibilidad por sucursal
+                              </button>
+                            </h2>
 
-                          {/* Regla general para todas las sucursales */}
-                          <h6 className="mb-2">Regla general (aplica a todas)</h6>
-                          <div className="row g-3 align-items-end">
-                            <div className="col-sm-3">
-                              <label className="form-label">
-                                Stock para todas <span className="text-muted">(ej. 10)</span>
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                                className="common-input common-input--md border--color-dark bg--white"
-                                {...register("pivot_default.stock")}
-                              />
-                              <small className="text-muted d-block mt-1">
-                                Si no indicas nada, el stock de producto se usará como base.
-                              </small>
-                              <FieldError error={errors?.pivot_default?.stock} />
-                            </div>
-
-                            <div className="col-sm-3">
-                              <div className="form-check form-switch mt-4">
-                                <input
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  id="is_active_default"
-                                  {...register("pivot_default.is_active")}
-                                />
-                                <label htmlFor="is_active_default" className="form-check-label">
-                                  Producto activo en todas
-                                </label>
-                              </div>
-                              <small className="text-muted d-block">
-                                Apágalo si, por ahora, no quieres que se muestre a la venta.
-                              </small>
-                              <FieldError error={errors?.pivot_default?.is_active} />
-                            </div>
-
-                            <div className="col-sm-3">
-                              <label className="form-label">Disponible desde</label>
-                              <input
-                                type="date"
-                                className="common-input common-input--md border--color-dark bg--white"
-                                {...register("pivot_default.available_from")}
-                              />
-                              <small className="text-muted">Déjalo vacío para disponibilidad inmediata.</small>
-                            </div>
-
-                            <div className="col-sm-3">
-                              <label className="form-label">Disponible hasta</label>
-                              <input
-                                type="date"
-                                className="common-input common-input--md border--color-dark bg--white"
-                                {...register("pivot_default.available_to")}
-                              />
-                              <small className="text-muted">Déjalo vacío si no tiene fecha de término.</small>
-                            </div>
-
-                            <div className="col-12">
-                              <label className="form-label">Notas internas</label>
-                              <input
-                                type="text"
-                                className="common-input common-input--md border--color-dark bg--white"
-                                placeholder="Ej. Solo exhibición, llega lote nuevo el lunes, etc."
-                                {...register("pivot_default.notes")}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Excepciones por sucursal */}
-                          {/* <hr className="my-4" />
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <h6 className="mb-0">Excepciones por sucursal (solo si alguna difiere)</h6>
-                            <button
-                              type="button"
-                              className="btn btn-outline-light btn-sm"
-                              onClick={addPivotOverrides}
-                              title="Crea excepciones para las sucursales seleccionadas arriba"
+                            <div
+                              id="collapseDispSucursal"
+                              className={`accordion-collapse collapse ${abrirDisp ? "show" : ""}`}
+                              aria-labelledby="headingDispSucursal"
+                              data-bs-parent="#accDispSucursal"
                             >
-                              Crear excepciones para seleccionadas
-                            </button>
-                          </div> */}
+                              <div className="accordion-body">
 
-                          {pivotFields.length === 0 ? (
-                            <small className="text-muted d-block">
-                              Aún no hay excepciones. La regla general se aplicará a todas tus sucursales.
-                            </small>
-                          ) : (
-                            pivotFields.map((field, index) => (
-                              <div key={field.id} className="p-3 border rounded mb-2 mt-2">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                  <strong>
-                                    Sucursal ID: {watch(`pivots.${index}.address_id`) || field.address_id}
-                                  </strong>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-danger"
-                                    onClick={() => removePivot(index)}
-                                  >
-                                    Quitar excepción
-                                  </button>
-                                </div>
-
-                                <div className="row g-3 align-items-end">
-                                  <div className="col-sm-3">
-                                    <label className="form-label">Stock solo en esta sucursal</label>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      className="common-input common-input--md border--color-dark bg--white"
-                                      placeholder="Deja vacío para usar la regla general"
-                                      {...register(`pivots.${index}.stock`)}
-                                    />
-                                  </div>
-
-                                  <div className="col-sm-3">
-                                    <div className="form-check form-switch mt-4">
-                                      <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        {...register(`pivots.${index}.is_active`)}
-                                        defaultChecked
-                                      />
-                                      <label className="form-check-label">Activo en esta sucursal</label>
+                                {/* ================== TU BLOQUE ORIGINAL ================== */}
+                                <div className="card common-card border border-gray-five overflow-hidden mb-24">
+                                  <div className="card-body">
+                                    {/* Nota introductoria para humanos */}
+                                    <div className="p-3 rounded mb-3" style={{ background: "#f7f7fb", border: "1px solid rgba(0,0,0,.06)" }}>
+                                      <strong>¿Para qué sirve?</strong>
+                                      <div className="mt-1">
+                                        Define <em>una sola regla</em> de stock y disponibilidad que se aplicará a
+                                        <b> todas tus sucursales</b>. Si alguna sucursal es distinta (más/menos stock,
+                                        fechas, inactiva), luego agregas esa <b>excepción</b> abajo.
+                                      </div>
                                     </div>
-                                  </div>
 
-                                  <div className="col-sm-3">
-                                    <label className="form-label">Desde (solo esta)</label>
-                                    <input
-                                      type="date"
-                                      className="common-input common-input--md border--color-dark bg--white"
-                                      {...register(`pivots.${index}.available_from`)}
-                                    />
-                                  </div>
+                                    {/* Regla general para todas las sucursales */}
+                                    <h6 className="mb-2">Regla general (aplica a todas)</h6>
+                                    <div className="row g-3 align-items-end">
+                                      <div className="col-sm-3">
+                                        <label className="form-label">
+                                          Stock para todas <span className="text-muted">(ej. 10)</span>
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          placeholder="0"
+                                          className="common-input common-input--md border--color-dark bg--white"
+                                          {...register("pivot_default.stock")}
+                                        />
+                                        <small className="text-muted d-block mt-1">
+                                          Si no indicas nada, el stock de producto se usará como base.
+                                        </small>
+                                        <FieldError error={errors?.pivot_default?.stock} />
+                                      </div>
 
-                                  <div className="col-sm-3">
-                                    <label className="form-label">Hasta (solo esta)</label>
-                                    <input
-                                      type="date"
-                                      className="common-input common-input--md border--color-dark bg--white"
-                                      {...register(`pivots.${index}.available_to`)}
-                                    />
-                                  </div>
+                                      <div className="col-sm-3">
+                                        <div className="form-check form-switch mt-4">
+                                          <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            id="is_active_default"
+                                            {...register("pivot_default.is_active")}
+                                          />
+                                          <label htmlFor="is_active_default" className="form-check-label">
+                                            Producto activo en todas
+                                          </label>
+                                        </div>
+                                        <small className="text-muted d-block">
+                                          Apágalo si, por ahora, no quieres que se muestre a la venta.
+                                        </small>
+                                        <FieldError error={errors?.pivot_default?.is_active} />
+                                      </div>
 
-                                  <div className="col-12">
-                                    <label className="form-label">Notas (solo esta)</label>
-                                    <input
-                                      type="text"
-                                      className="common-input common-input--md border--color-dark bg--white"
-                                      placeholder="Si lo dejas vacío, se usan las notas generales"
-                                      {...register(`pivots.${index}.notes`)}
-                                    />
-                                  </div>
+                                      <div className="col-sm-3">
+                                        <label className="form-label">Disponible desde</label>
+                                        <input
+                                          type="date"
+                                          className="common-input common-input--md border--color-dark bg--white"
+                                          {...register("pivot_default.available_from")}
+                                        />
+                                        <small className="text-muted">Déjalo vacío para disponibilidad inmediata.</small>
+                                      </div>
 
-                                  {/* Campo técnico oculto */}
-                                  <input
-                                    type="hidden"
-                                    {...register(`pivots.${index}.address_id`)}
-                                    defaultValue={field.address_id}
-                                  />
+                                      <div className="col-sm-3">
+                                        <label className="form-label">Disponible hasta</label>
+                                        <input
+                                          type="date"
+                                          className="common-input common-input--md border--color-dark bg--white"
+                                          {...register("pivot_default.available_to")}
+                                        />
+                                        <small className="text-muted">Déjalo vacío si no tiene fecha de término.</small>
+                                      </div>
+
+                                      <div className="col-12">
+                                        <label className="form-label">Notas internas</label>
+                                        <input
+                                          type="text"
+                                          className="common-input common-input--md border--color-dark bg--white"
+                                          placeholder="Ej. Solo exhibición, llega lote nuevo el lunes, etc."
+                                          {...register("pivot_default.notes")}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {pivotFields.length === 0 ? (
+                                      <small className="text-muted d-block">
+                                        Aún no hay excepciones. La regla general se aplicará a todas tus sucursales.
+                                      </small>
+                                    ) : (
+                                      pivotFields.map((field, index) => (
+                                        <div key={field.id} className="p-3 border rounded mb-2 mt-2">
+                                          <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>
+                                              Sucursal ID: {watch(`pivots.${index}.address_id`) || field.address_id}
+                                            </strong>
+                                            <button
+                                              type="button"
+                                              className="btn btn-sm btn-danger"
+                                              onClick={() => removePivot(index)}
+                                            >
+                                              Quitar excepción
+                                            </button>
+                                          </div>
+
+                                          <div className="row g-3 align-items-end">
+                                            <div className="col-sm-3">
+                                              <label className="form-label">Stock solo en esta sucursal</label>
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                className="common-input common-input--md border--color-dark bg--white"
+                                                placeholder="Deja vacío para usar la regla general"
+                                                {...register(`pivots.${index}.stock`)}
+                                              />
+                                            </div>
+
+                                            <div className="col-sm-3">
+                                              <div className="form-check form-switch mt-4">
+                                                <input
+                                                  type="checkbox"
+                                                  className="form-check-input"
+                                                  {...register(`pivots.${index}.is_active`)}
+                                                  defaultChecked
+                                                />
+                                                <label className="form-check-label">Activo en esta sucursal</label>
+                                              </div>
+                                            </div>
+
+                                            <div className="col-sm-3">
+                                              <label className="form-label">Desde (solo esta)</label>
+                                              <input
+                                                type="date"
+                                                className="common-input common-input--md border--color-dark bg--white"
+                                                {...register(`pivots.${index}.available_from`)}
+                                              />
+                                            </div>
+
+                                            <div className="col-sm-3">
+                                              <label className="form-label">Hasta (solo esta)</label>
+                                              <input
+                                                type="date"
+                                                className="common-input common-input--md border--color-dark bg--white"
+                                                {...register(`pivots.${index}.available_to`)}
+                                              />
+                                            </div>
+
+                                            <div className="col-12">
+                                              <label className="form-label">Notas (solo esta)</label>
+                                              <input
+                                                type="text"
+                                                className="common-input common-input--md border--color-dark bg--white"
+                                                placeholder="Si lo dejas vacío, se usan las notas generales"
+                                                {...register(`pivots.${index}.notes`)}
+                                              />
+                                            </div>
+
+                                            {/* Campo técnico oculto */}
+                                            <input
+                                              type="hidden"
+                                              {...register(`pivots.${index}.address_id`)}
+                                              defaultValue={field.address_id}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
                                 </div>
+                                {/* ================== FIN BLOQUE ================== */}
+
                               </div>
-                            ))
-                          )}
+                            </div>
+                          </div>
                         </div>
                       </div>
 

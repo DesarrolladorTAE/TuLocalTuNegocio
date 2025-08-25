@@ -85,19 +85,24 @@ const PopularOne = () => {
     let mounted = true;
     (async () => {
       try {
-        const data = await fetchCategorias(); // ← array de categorías
+        const data = await fetchCategorias();
         if (!mounted) return;
 
-        // Normaliza mínimamente lo que necesitamos
+        const START = 30; // saltar 30 → empezar en la #31
+
         const normalized = Array.isArray(data)
-          ? data.map((c) => ({
-            id: c.id ?? c._id ?? Math.random().toString(36).slice(2),
-            name: c.name || c.title || "Sin nombre",
-            slug: c.slug || (c.name ? c.name.toLowerCase().replace(/\s+/g, "-") : "categoria"),
-            imageSrc: getCatImage(c),
-            qty: c.products_count ?? c.qty ?? null, // si algún día viene el conteo
-            updated_at: c.updated_at, // si algún día viene el conteo
-          }))
+          ? data
+            // .sort((a,b) => Number(a.id) - Number(b.id)) // opcional: ordena antes
+            .slice(START)                                  // ← de la #31 en adelante
+            .map((c, i) => ({
+              id: Number(c.id),
+              name: c.name || c.title || "Sin nombre",
+              slug: c.slug || (c.name ? c.name.toLowerCase().replace(/\s+/g, "-") : "categoria"),
+              imageSrc: getCatImage(c),
+              qty: c.products_count ?? c.qty ?? null,      // ← tu “count” de productos
+              num: START + i + 1,                          // ← 31, 32, 33...
+              updated_at: c.updated_at ?? null,
+            }))
           : [];
 
         setCats(normalized);
@@ -108,17 +113,16 @@ const PopularOne = () => {
         setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
+
 
   if (loading) {
     return (
       <section className="popular padding-y-120 overflow-hidden">
         <div className="container container-two">
           <div className="section-heading style-left mb-64">
-            <h5 className="section-heading__title">Popular Categories</h5>
+            <h5 className="section-heading__title">Categorias</h5>
           </div>
           <div className="text-center text-muted">Cargando categorías…</div>
         </div>

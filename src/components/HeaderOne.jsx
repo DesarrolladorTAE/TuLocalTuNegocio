@@ -106,18 +106,34 @@ const HeaderOne = () => {
           <nav className="header-inner flx-between">
             {/* Logo Start */}
             <div className="logo">
-              <Link to="/" className="link white-version">
+              {/* estilos embebidos */}
+              <style>{`
+    .logo .brand-img{
+      height: 100px;
+      width: auto !important;     /* evita estirarse */
+      object-fit: contain;
+      display: block;
+    }
+    @media (max-width: 576px){
+      .logo .brand-img{
+        height: 48px;             /* tamaño en pantallas pequeñas */
+      }
+    }
+  `}</style>
+
+              <Link to="/" className="link white-version mobile-menu__logo">
                 <img
                   src="/assets/images/logo/logo.png"
                   alt="Logo"
-                  style={{ height: "100px", width: "auto" }}
+                  className="brand-img"
                 />
               </Link>
-              <Link to="/" className="link dark-version">
+
+              <Link to="/" className="link dark-version mobile-menu__logo">
                 <img
                   src="/assets/images/logo/white-logo-two.png"
                   alt="Logo"
-                  style={{ height: "100px", width: "auto" }}
+                  className="brand-img"
                 />
               </Link>
             </div>
@@ -293,12 +309,12 @@ const HeaderOne = () => {
             <img
               src="/assets/images/logo/logo.png"
               alt="Logo"
-              className="white-version"
+              className="white-version logo-img"
             />
             <img
               src="/assets/images/logo/white-logo-two.png"
               alt="Logo"
-              className="dark-version"
+              className="dark-version logo-img"
             />
           </Link>
           <div className="mobile-menu__menu">
@@ -306,25 +322,25 @@ const HeaderOne = () => {
               className="nav-menu flx-align nav-menu--mobile"
               id="offcanvas-navigation"
             >
-              <li className="nav-menu__item">
+              <li className="nav-menu__item" onClick={mobileMenu}>
                 <NavLink to="/" className="nav-menu__link">
                   Inicio
                 </NavLink>
               </li>
-              <li className="nav-menu__item">
+              <li className="nav-menu__item" onClick={mobileMenu}>
                 <NavLink to="/all-product" className="nav-menu__link">
                   Productos
                 </NavLink>
               </li>
-              <li className="nav-menu__item has-submenu">
+              <li className="nav-menu__item has-submenu" >
                 <span className="nav-menu__link">Categorías</span>
                 <div className="nav-submenu mega-menu">
                   {categoriasEnFilas.map((fila, idx) => (
-                    <ul key={idx} className="nav-submenu__col">
+                    <ul key={idx} className="nav-submenu__col" >
                       {fila.map((cat) => (
-                        <li key={cat.id} className="nav-submenu__item">
+                        <li onClick={mobileMenu} key={cat.id} className="nav-submenu__item" >
                           <a
-                            href={`/all-product/${cat.slug}`}
+                            href={`/all-product?cat=${cat.id}`}
                             className="nav-submenu__link"
                           >
                             {cat.name}
@@ -336,9 +352,9 @@ const HeaderOne = () => {
                 </div>
               </li>
 
-              <li className="nav-menu__item">
+              <li className="nav-menu__item" onClick={mobileMenu}>
                 <NavLink to="/donaciones" className="nav-menu__link">
-                  Contact
+                  Donaciones
                 </NavLink>
               </li>
             </ul>

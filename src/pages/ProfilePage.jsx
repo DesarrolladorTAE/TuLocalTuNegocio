@@ -24,7 +24,7 @@ const ProfilePage = () => {
   const isVendorView = Boolean(id);
 
   const [loading, setLoading] = useState(true);
-  const [person, setPerson] = useState(getCachedUser()); // ← pinta algo desde el inicio si hay caché
+  const [person, setPerson] = useState([]);
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState('profile');
@@ -41,6 +41,7 @@ const ProfilePage = () => {
           const res = await productosPorVendedor(id);
           if (cancel) return;
           setPerson(res?.vendor ?? null);
+          // console.log('res: ', res)
           setProducts(Array.isArray(res?.products) ? res.products : []);
         } else {
           let user = JSON.parse(localStorage.getItem('user'))
@@ -64,7 +65,7 @@ const ProfilePage = () => {
     return () => {
       cancel = true;
     };
-  }, [id, isVendorView]);
+  }, [id, ]);
 
   const refreshDatos = (id) => {
     productosPorVendedor(id).then((res) => {
@@ -75,6 +76,10 @@ const ProfilePage = () => {
     })
   }
 
+  const activTabChange = (activeTabe) =>{
+    setActiveTab(activeTabe ?? 'new')
+  }
+
   return (
     <>
       {loading && <Preloader />}
@@ -82,7 +87,7 @@ const ProfilePage = () => {
       <HeaderOne />
       <BreadcrumbThree
         entity={person}
-        showNewProduct={!isVendorView}
+        showNewProduct={!isVendorView} 
         isVendorView={isVendorView}
         activeTab={activeTab}
         onChangeTab={setActiveTab}
@@ -95,7 +100,7 @@ const ProfilePage = () => {
         isVendorView={isVendorView}
         categorias={JSON.parse(localStorage.getItem('categorias'))}
         refreshDatos={refreshDatos}
-        onGoToEditTab={() => setActiveTab('new')}
+        onGoToEditTab={activTabChange}
       />
 
       {error && (

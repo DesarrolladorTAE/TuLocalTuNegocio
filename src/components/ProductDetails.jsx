@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useAsyncError } from "react-router-dom";
 import MoreItems from "./MoreItems"; // ajusta la ruta si aplica
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,6 +27,7 @@ const orderImages = (images = []) => {
   return uniq.sort((a, b) => Number(b.is_main) - Number(a.is_main));
 };
 
+
 const ProductDetails = ({ product }) => {
   // ✅ hooks siempre al tope, nunca detrás de un return
   const imgs = useMemo(() => {
@@ -40,7 +41,7 @@ const ProductDetails = ({ product }) => {
   const [idx, setIdx] = useState(0);
   const total = imgs.length;
   const [mensaje, setMensaje] = useState("");
-
+  const userlog = !!(localStorage.getItem('token'));
 
   useEffect(() => {
     setIdx(0); // reset al cambiar de producto
@@ -312,7 +313,7 @@ const ProductDetails = ({ product }) => {
                       </span>
                     </div>
                   </div>
-                  <Link to={`/vendor/${vendor.id}`} className="btn btn-outline-light w-100 pill mt-32">Ver perfil del vendedor</Link>
+                  <Link to={userlog ? `/vendor/${vendor.id}` : '/login'} className="btn btn-outline-light w-100 pill mt-32" >Ver perfil del vendedor</Link>
                 </div>
               )}
 
