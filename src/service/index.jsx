@@ -268,9 +268,6 @@ export async function createProduct(formData, onProgress) {
   const rawId = fd.get("id");        // string | null
   const id = rawId && `${rawId}`.trim() !== "" ? rawId : null;
 
-  // Para updates, borra el id del body si tu backend lo quiere solo en URL
-  if (id) fd.delete("id");
-
   // Define endpoint/método para Laravel
   let url = "producto";
   let config = {
@@ -284,8 +281,8 @@ export async function createProduct(formData, onProgress) {
 
   if (id) {
     // Opción A: override por POST
-    url = `producto/${id}`;
-    fd.append("_method", "PUT");
+    url = `producto/actualizar`;
+    fd.append("_method", "POST");
   }
 
   const res = await axiosClient.post(url, fd, config);
