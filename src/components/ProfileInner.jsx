@@ -292,7 +292,7 @@ const ProfileInner = () => {
 
   const refrestAdmin = () => {
     mostrarUsuario(3).then((res) => {
-      console.log('admins: ', res)
+      // console.log('admins: ', res)
       setAdmin(res)
     }).catch((err) => {
       console.log('err: ', err)

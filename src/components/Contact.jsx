@@ -29,6 +29,14 @@ const Donation = () => {
   //   setMethods((m) => ({ ...m, [k]: !m[k] }));
 
   const handleDonate = async (e) => {
+    // obtener el usuario desde localStorage
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      user = {};
+    }
+
     e.preventDefault();
     setErr("");
 
@@ -52,9 +60,9 @@ const Donation = () => {
         customer: anonymous
           ? {}
           : {
-              name: name?.trim() || undefined,
-              email: email?.trim() || undefined,
-            },
+            name: name?.trim() || user.name || undefined,
+            email: email?.trim() || user.email || undefined,
+          },
         metadata: {
           source: "web",
           path: window.location.pathname,
@@ -68,7 +76,8 @@ const Donation = () => {
 
       // Abre la URL de pago:
       if (data?.checkout_url) {
-        window.open(data.checkout_url, "_blank", "noopener,noreferrer");
+        // Más confiable en iOS/Safari
+        window.location.assign(data.checkout_url);
       } else {
         setErr("No se recibió la URL de pago. Intenta de nuevo.");
       }

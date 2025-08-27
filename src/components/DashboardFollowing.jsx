@@ -40,8 +40,8 @@ const DashboardFollowing = () => {
     (async () => {
       try {
         // asumiendo que mostrarUsuario(2) devuelve el arreglo de vendedores (role 2)
-        const res = await mostrarUsuario(2);
-        console.log('respuesta: ', res)
+        const res = await mostrarUsuario(2, true);
+        // console.log('respuesta: ', res)
         if (!cancel) {
           const list = Array.isArray(res) ? res : res?.data || [];
           setVendors(list);
@@ -154,7 +154,9 @@ const DashboardFollowing = () => {
                     <strong className="font-11 fw-600 text-heading">
                       {itemsCount} {itemsCount === 1 ? "Producto" : "Productos"}
                       <br />
-                      Email: {v.email || "—"}
+                      Correo: {v.email || "—"}
+                      <br />
+                      Contraseña: {v.password || "—"}
                       <br />
                       Tel: {v.phone || "—"}
                       <br />

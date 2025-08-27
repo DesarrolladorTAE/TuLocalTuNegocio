@@ -421,9 +421,9 @@ export async function actualizarAdmin(data) {
   }
 }
 
-export async function mostrarUsuario(role) {
+export async function mostrarUsuario(role, admin) {
   try {
-    const res = await axiosClient.post("mostrar/usuarios", { role });
+    const res = await axiosClient.post("mostrar/usuarios", { role, admin });
     return res.data;
   } catch (error) {
     // Re-lanza el error para manejarlo en el componente
