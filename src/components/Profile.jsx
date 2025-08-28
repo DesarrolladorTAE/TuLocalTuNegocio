@@ -541,7 +541,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
             <ul
               role="listbox"
               className="list-group position-absolute w-100 mt-1 shadow-sm"
-              style={{ zIndex: 30, maxHeight: 280, overflowY: "auto", borderRadius: 8 }}
+              style={{ zIndex: 2000, maxHeight: 280, overflowY: "auto", borderRadius: 8 }}
             >
               {filtered.length === 0 && (
                 <li className="list-group-item small text-muted">Sin resultados…</li>
@@ -1128,7 +1128,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                   <div className="card-body">
                     <form onSubmit={handleSubmit(onSubmit)}>
                       {/* ================== Datos del producto ================== */}
-                      <div className="card common-card border border-gray-five overflow-hidden mb-24">
+                      <div className="card common-card border border-gray-five mb-24">
                         <div className="card-header"><h6 className="title">Datos del producto</h6></div>
                         <div className="card-body">
                           <div className="row g-3">
@@ -1240,7 +1240,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                             </div>
 
                                             <div className="mt-2 small text-muted">
-                                              <div>Destinatario: {l.recipient || "—"}</div>
+                                              <div>Responsable: {l.recipient || "—"}</div>
                                               <div>Tel: {l.phone || "—"}</div>
                                               <div>Calle: {l.street || "—"} {l.ext_no || ""}</div>
                                               <div>CP: {l.zip || "—"}</div>
@@ -1297,7 +1297,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                     <div className="accordion-body">
 
                                       <div className="alert alert-primary py-2 mb-3">
-                                        Si llenas esta sección, se requiere <b>Destinatario</b>, <b>Teléfono</b> y <b>Calle</b>.
+                                        En esta localidad se encontrá el <b>producto</b> que va a registrar.
                                       </div>
 
                                       {/* Si quieres deshabilitar cuando no es obligatoria, usa esta bandera */}
@@ -1305,11 +1305,11 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                       {/* Para que se vea bien, usamos form-control (Bootstrap) */}
                                       <div className="row g-3">
                                         <div className="col-md-6">
-                                          <label className="form-label">Destinatario *</label>
+                                          <label className="form-label">Responsable *</label>
                                           <input
                                             type="text"
                                             className="form-control"
-                                            placeholder="Nombre de quien recibe"
+                                            placeholder="Encargado del local"
                                             // disabled={disabled}
                                             {...register("new_address.recipient", {
                                               required: exigirNueva ? "Este campo es obligatorio" : false,
