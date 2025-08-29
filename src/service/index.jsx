@@ -222,14 +222,14 @@ export async function createProduct(formData, onProgress) {
       if (v !== undefined && v !== null && `${v}`.trim() !== "") fd.append(k, v);
     };
 
-    appendIf("id", d.id); // 👈 puede venir vacío
+    appendIf("id", d.id);
     appendIf("name", d.name);
     appendIf("description", d.description);
     appendIf("price", d.price);
     appendIf("stock", d.stock);
     appendIf("category_id", d.category_id);
 
-    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => fd.append("images[]", file));
+    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => fd.append("images[]", file, file.name));
     (d.selected_address_ids || []).forEach(id => fd.append("address_ids[]", id));
 
     const a = d.new_address || {};
@@ -264,30 +264,29 @@ export async function createProduct(formData, onProgress) {
     });
   }
 
-  // 👇 Detecta actualización con FormData.get('id')
-  const rawId = fd.get("id");        // string | null
+  const rawId = fd.get("id");
   const id = rawId && `${rawId}`.trim() !== "" ? rawId : null;
 
-  // Define endpoint/método para Laravel
   let url = "producto";
-  let config = {
-    headers: { "Content-Type": "multipart/form-data" },
+  if (id) {
+    url = "producto/actualizar";
+    fd.append("_method", "POST"); // si tu backend usa POST como override
+  }
+
+  // ⚠️ No fijes Content-Type; axios lo arma (con boundary)
+  const res = await axiosClient.post(url, fd, {
+    headers: {}, // asegura que NO se arrastre 'application/json' de un interceptor
     onUploadProgress: (e) => {
       if (!onProgress) return;
       const percent = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
       onProgress({ percent });
     },
-  };
+    transformRequest: [(data) => data], // evita serialización accidental
+  });
 
-  if (id) {
-    // Opción A: override por POST
-    url = `producto/actualizar`;
-    fd.append("_method", "POST");
-  }
-
-  const res = await axiosClient.post(url, fd, config);
   return res.data;
 }
+
 
 
 

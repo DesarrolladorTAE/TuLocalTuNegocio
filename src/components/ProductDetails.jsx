@@ -125,8 +125,21 @@ const ProductDetails = ({ product }) => {
                   <img
                     src={imgs[idx]}
                     alt={`${product.name} - imagen ${idx + 1}`}
-                    style={{ width: "100%", height: "auto", borderRadius: 8, objectFit: "cover" }}
+                    className="w-100 rounded" // Bootstrap utilities
+                    style={{ objectFit: "cover", maxHeight: 500 }}
                   />
+
+                  {/* 👇 Overlay con Bootstrap */}
+                  {product.images?.[idx]?.description && (
+                    <div
+                      className="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-50 text-white p-2"
+                      style={{ borderBottomLeftRadius: "8px", borderBottomRightRadius: "8px" }}
+                    >
+                      <small className="d-block text-truncate">
+                        {product.images[idx].description}
+                      </small>
+                    </div>
+                  )}
 
                   {total > 1 && (
                     <>
@@ -135,7 +148,13 @@ const ProductDetails = ({ product }) => {
                         aria-label="Anterior"
                         onClick={prev}
                         className="btn btn-white position-absolute"
-                        style={{ top: "50%", left: 8, transform: "translateY(-50%)", borderRadius: 999, padding: "8px 10px" }}
+                        style={{
+                          top: "50%",
+                          left: 8,
+                          transform: "translateY(-50%)",
+                          borderRadius: 999,
+                          padding: "8px 10px",
+                        }}
                       >
                         <i className="fas fa-chevron-left" />
                       </button>
@@ -144,13 +163,20 @@ const ProductDetails = ({ product }) => {
                         aria-label="Siguiente"
                         onClick={next}
                         className="btn btn-white position-absolute"
-                        style={{ top: "50%", right: 8, transform: "translateY(-50%)", borderRadius: 999, padding: "8px 10px" }}
+                        style={{
+                          top: "50%",
+                          right: 8,
+                          transform: "translateY(-50%)",
+                          borderRadius: 999,
+                          padding: "8px 10px",
+                        }}
                       >
                         <i className="fas fa-chevron-right" />
                       </button>
                     </>
                   )}
                 </div>
+
 
                 {total > 1 && (
                   <div className="d-flex gap-2 mt-3 flex-wrap">

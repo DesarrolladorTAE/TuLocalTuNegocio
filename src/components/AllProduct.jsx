@@ -217,7 +217,7 @@ const AllProduct = () => {
               </form>
             </div>
             <div className="filter-tab gap-3 flx-between">
-              <button
+              {/* <button
                 type="button"
                 className="filter-tab__button btn btn-outline-light pill d-flex align-items-center"
               >
@@ -225,7 +225,7 @@ const AllProduct = () => {
                   <img src="assets/images/icons/filter.svg" alt="" />
                 </span>
                 <span className="font-18 fw-500">Filtros</span>
-              </button>
+              </button> */}
               <ul
                 className="nav common-tab nav-pills mb-0 gap-lg-2 gap-1 ms-lg-auto"
                 id="pills-tab"

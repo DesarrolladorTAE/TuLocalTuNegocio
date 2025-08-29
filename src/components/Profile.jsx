@@ -41,6 +41,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
   const [previews, setPreviews] = useState([]);
   const [editingProductId, setEditingProductId] = useState(null);
   const [currentImages, setCurrentImages] = useState([]);
+  const [imageDescs, setImageDescs] = useState(Array(MAX_FILES).fill("")); // descripción por slot
+  const [mainIndex, setMainIndex] = useState(0); // cuál será la imagen principal
+
 
   // Categorías únicas del vendedor (a partir de products)
   const categoriasVendedor = useMemo(() => {
@@ -160,6 +163,13 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       return;
     }
     setFiles(merged);
+    setImageDescs(prev => {
+      const next = [...prev];
+      // si entran más archivos, asegúrate de tener slots vacíos para ellos
+      while (next.length < merged.length) next.push("");
+      // si se recortó por tope 10, también recorta descripciones
+      return next.slice(0, merged.length);
+    });
   };
   const { fields: pivotFields, append: appendPivot, remove: removePivot } = useFieldArray({
     control,
@@ -198,7 +208,13 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
   );
   const onPick = (e) => validateAndSetFiles(e.target.files);
   const removeFileAt = (idx) => {
-    setFiles((arr) => arr.filter((_, i) => i !== idx));
+    setFiles(arr => arr.filter((_, i) => i !== idx));
+    setImageDescs(arr => {
+      const next = arr.filter((_, i) => i !== idx);
+      return next.length ? next : Array(MAX_FILES).fill("");
+    });
+    // si quitaste la principal, reubica principal al 0 o al previo
+    setMainIndex(i => (i === idx ? 0 : i > idx ? i - 1 : i));
   };
   const openPicker = () => inputRef.current?.click();
   const prevent = (e) => {
@@ -241,8 +257,21 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       if (data.category_id) fd.append("category_id", data.category_id);
       if (data.description) fd.append("description", data.description);
 
-      // imágenes nuevas
-      files.forEach((file) => fd.append("images[]", file));
+      const imagesMeta = files.map((_, idx) => ({
+        index: idx,
+        description: (imageDescs[idx] || "").trim(),
+        is_main: idx === mainIndex,
+      }));
+
+      imagesMeta.forEach((m, i) => {
+        fd.append(`images_meta[${i}][index]`, String(m.index));
+        if (m.description) fd.append(`images_meta[${i}][description]`, m.description);
+        fd.append(`images_meta[${i}][is_main]`, m.is_main ? '1' : '0'); // boolean como "1"/"0"
+      });
+
+      files.forEach((file) => {
+        fd.append("images[]", file, file.name);
+      });
 
       // localidades
       (data.selected_address_ids || []).forEach((id) => fd.append("address_ids[]", id));
@@ -1266,15 +1295,14 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                             </small>
                             <FieldError error={errors.selected_address_ids} />
 
-
                             <div className="col-12">
                               <hr />
 
                               <div className="accordion" id="accNuevaLocalidad">
-                                <div className="accordion-item">
+                                <div className="accordion-item common-card">
                                   <h2 className="accordion-header" id="headingNuevaLocalidad">
                                     <button
-                                      className={`accordion-button ${exigirNueva ? "" : "collapsed"}`}
+                                      className={`accordion-button common-card form-label ${exigirNueva ? "" : "collapsed"}`}
                                       type="button"
                                       data-bs-toggle="collapse"
                                       data-bs-target="#collapseNuevaLocalidad"
@@ -1295,22 +1323,17 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                     data-bs-parent="#accNuevaLocalidad"
                                   >
                                     <div className="accordion-body">
-
                                       <div className="alert alert-primary py-2 mb-3">
                                         En esta localidad se encontrá el <b>producto</b> que va a registrar.
                                       </div>
 
-                                      {/* Si quieres deshabilitar cuando no es obligatoria, usa esta bandera */}
-                                      {/** const disabled = !exigirNueva && !hasNewAddrInput; */}
-                                      {/* Para que se vea bien, usamos form-control (Bootstrap) */}
                                       <div className="row g-3">
                                         <div className="col-md-6">
                                           <label className="form-label">Responsable *</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Encargado del local"
-                                            // disabled={disabled}
                                             {...register("new_address.recipient", {
                                               required: exigirNueva ? "Este campo es obligatorio" : false,
                                             })}
@@ -1322,9 +1345,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">Teléfono *</label>
                                           <input
                                             type="tel"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="10 dígitos"
-                                            // disabled={disabled}
                                             {...register("new_address.phone", {
                                               required: exigirNueva ? "Este campo es obligatorio" : false,
                                             })}
@@ -1336,9 +1358,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">Calle *</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. Av. Reforma"
-                                            // disabled={disabled}
                                             {...register("new_address.street", {
                                               required: exigirNueva ? "Este campo es obligatorio" : false,
                                             })}
@@ -1350,9 +1371,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">No. Ext</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. 123"
-                                            // disabled={disabled}
                                             {...register("new_address.ext_no")}
                                           />
                                           <FieldError error={errors?.new_address?.ext_no} />
@@ -1362,9 +1382,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">No. Int</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. 4B"
-                                            // disabled={disabled}
                                             {...register("new_address.int_no")}
                                           />
                                           <FieldError error={errors?.new_address?.int_no} />
@@ -1374,9 +1393,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">Colonia</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. Centro"
-                                            // disabled={disabled}
                                             {...register("new_address.neighborhood")}
                                           />
                                           <FieldError error={errors?.new_address?.neighborhood} />
@@ -1386,9 +1404,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">Ciudad</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. Puebla"
-                                            // disabled={disabled}
                                             {...register("new_address.city")}
                                           />
                                           <FieldError error={errors?.new_address?.city} />
@@ -1398,9 +1415,8 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">Estado</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. Puebla"
-                                            // disabled={disabled}
                                             {...register("new_address.state")}
                                           />
                                           <FieldError error={errors?.new_address?.state} />
@@ -1410,10 +1426,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           <label className="form-label">C.P.</label>
                                           <input
                                             type="text"
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             inputMode="numeric"
                                             placeholder="Ej. 72000"
-                                            // disabled={disabled}
                                             {...register("new_address.zip")}
                                           />
                                           <FieldError error={errors?.new_address?.zip} />
@@ -1422,10 +1437,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                         <div className="col-12">
                                           <label className="form-label">Referencias</label>
                                           <textarea
-                                            className="form-control"
+                                            className="common-input common-input--md border--color-dark bg--white"
                                             rows={2}
                                             placeholder="Punto de referencia, horario, etc."
-                                            // disabled={disabled}
                                             {...register("new_address.references")}
                                           />
                                           <FieldError error={errors?.new_address?.references} />
@@ -1439,19 +1453,20 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
 
 
 
+
                           </div>
                         </div>
                       </div>
 
                       {/* ================== Disponibilidad por sucursal ================== */}
-                      <div className="col-12 mb-4">
+                      <div className="col-12 mb-4 common-card">
                         <hr />
 
-                        <div className="accordion" id="accDispSucursal">
-                          <div className="accordion-item ">
+                        <div className="accordion common-card" id="accDispSucursal">
+                          <div className="accordion-item common-card ">
                             <h2 className="accordion-header" id="headingDispSucursal">
                               <button
-                                className={`accordion-button ${abrirDisp ? "" : "collapsed"}`}
+                                className={`common-card form-label accordion-button ${abrirDisp ? "" : "collapsed"}`}
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#collapseDispSucursal"
@@ -1474,13 +1489,14 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                 <div className="card common-card border border-gray-five overflow-hidden mb-24">
                                   <div className="card-body">
                                     {/* Nota introductoria para humanos */}
-                                    <div className="p-3 rounded mb-3" style={{ background: "#f7f7fb", border: "1px solid rgba(0,0,0,.06)" }}>
-                                      <strong>¿Para qué sirve?</strong>
-                                      <div className="mt-1">
+                                    <div className="p-3 rounded mb-3" >
+                                      <h6>¿Para qué sirve?</h6>
+                                      <samll className="mt-1 form-label">
+
                                         Define <em>una sola regla</em> de stock y disponibilidad que se aplicará a
                                         <b> todas tus sucursales</b>. Si alguna sucursal es distinta (más/menos stock,
                                         fechas, inactiva), luego agregas esa <b>excepción</b> abajo.
-                                      </div>
+                                      </samll>
                                     </div>
 
                                     {/* Regla general para todas las sucursales */}
@@ -1511,7 +1527,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                             id="is_active_default"
                                             {...register("pivot_default.is_active")}
                                           />
-                                          <label htmlFor="is_active_default" className="form-check-label">
+                                          <label htmlFor="is_active_default" className="form-check-label form-label">
                                             Producto activo en todas
                                           </label>
                                         </div>
@@ -1652,7 +1668,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                           <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={onPick} />
 
                           <div role="button" onClick={openPicker} className="w-100 mb-3 p-3 text-center border border-dashed rounded" style={{ borderStyle: "dashed", cursor: "pointer" }}>
-                            <div className="mb-1 fw-semibold text-dark">Arrastra y suelta aquí</div>
+                            <div className="mb-1 fw-semibold  form-label">Arrastra y suelta aquí</div>
                             <small className="text-muted">o haz clic para seleccionar (máx. 10, 2MB c/u)</small>
                           </div>
                           {editingProductId && currentImages?.length > 0 && (
@@ -1660,20 +1676,25 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                               <label className="form-label fw-semibold">Imágenes actuales</label>
                               <div className="row g-2">
                                 {currentImages.map(img => (
-                                  <div key={img.id} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                                  <div key={img.id} className="col-12 col-sm-6 col-md-4 col-lg-3">
                                     <div className="border rounded overflow-hidden">
                                       <img
                                         src={img.img_url}
                                         alt=""
                                         className="w-100"
-                                        style={{ height: 110, objectFit: "cover" }}
+                                        style={{ height: 140, objectFit: "cover" }}
                                       />
                                     </div>
+                                    {img.description && (
+                                      <small className="text-muted d-block mt-1">
+                                        {img.description}
+                                      </small>
+                                    )}
                                   </div>
                                 ))}
                               </div>
                               <small className="text-muted d-block mt-1">
-                                Si subes nuevas imágenes, se agregarán a este producto (tu backend decide si reemplaza o agrega).
+                                Si subes nuevas imágenes, tu backend decidirá si reemplaza o agrega. Las descripciones de las nuevas viajarán en <code>images_meta</code>.
                               </small>
                             </div>
                           )}
@@ -1682,23 +1703,81 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                               const f = files[i];
                               return (
                                 <div className="col-6 col-sm-4 col-md-3 col-lg-2" key={i}>
-                                  <div className="position-relative border rounded d-flex align-items-center justify-content-center" style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }} onClick={openPicker}>
+                                  <div
+                                    className="position-relative border rounded d-flex align-items-center justify-content-center"
+                                    style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }}
+                                    onClick={openPicker}
+                                  >
                                     {f ? (
                                       <>
                                         <img
-                                          src={previews[i]} alt={`img-${i}`}
+                                          src={previews[i]}
+                                          alt={`img-${i}`}
                                           loading="lazy"
-                                          className="position-absolute top-0 start-0 w-100 h-100" style={{ objectFit: "cover" }} />
-                                        <button type="button" className="btn btn-sm btn-danger position-absolute" style={{ top: 6, right: 6 }} onClick={(e) => { e.stopPropagation(); removeFileAt(i); }} aria-label="Eliminar imagen">×</button>
+                                          className="position-absolute top-0 start-0 w-100 h-100"
+                                          style={{ objectFit: "cover" }}
+                                        />
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-danger position-absolute"
+                                          style={{ top: 6, right: 6 }}
+                                          onClick={(e) => { e.stopPropagation(); removeFileAt(i); }}
+                                          aria-label="Eliminar imagen"
+                                        >
+                                          ×
+                                        </button>
                                       </>
                                     ) : (
-                                      <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-muted" style={{ fontSize: 12 }}>Slot {i + 1}</div>
+                                      <div
+                                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-muted"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        Slot {i + 1}
+                                      </div>
                                     )}
                                   </div>
+
+                                  {/* 👇 Campos adicionales solo cuando hay archivo */}
+                                  {f && (
+                                    <div className="mt-2">
+                                      {/* Descripción por imagen */}
+                                      <textarea
+                                        className="common-input radius-8 w-100"
+                                        rows={2}
+                                        placeholder="Descripción de esta imagen…"
+                                        value={imageDescs[i] ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setImageDescs(prev => {
+                                            const next = [...prev];
+                                            next[i] = val;
+                                            return next;
+                                          });
+                                        }}
+                                        maxLength={2000}
+                                      />
+
+                                      {/* Selector de principal */}
+                                      <div className="form-check mt-1">
+                                        <input
+                                          className="form-check-input"
+                                          type="radio"
+                                          name="mainImage"
+                                          id={`main-${i}`}
+                                          checked={mainIndex === i}
+                                          onChange={() => setMainIndex(i)}
+                                        />
+                                        <label className="form-check-label small" htmlFor={`main-${i}`}>
+                                          Usar como imagen principal
+                                        </label>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
                           </div>
+
 
                           {/* Preview principal */}
                           {files[0] && (

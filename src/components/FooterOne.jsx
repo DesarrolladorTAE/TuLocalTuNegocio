@@ -42,12 +42,12 @@ const FooterOne = () => {
                 <div className="footer-widget__social">
                   <ul className="social-icon-list">
                     <li className="social-icon-list__item">
-                      <a href="#" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
+                      <a href="https://www.instagram.com/tulocaltunego/?utm_source=ig_web_button_share_sheet" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
                         <i className="fab fa-instagram" />
                       </a>
                     </li>
                     <li className="social-icon-list__item">
-                      <a href="#" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
+                      <a href="https://www.tiktok.com/@tulocaltunego?is_from_webapp=1&sender_device=pc" className="social-icon-list__link flx-center" target="_blank" rel="noreferrer">
                         <i className="fab fa-tiktok" />
                       </a>
                     </li>
@@ -88,7 +88,7 @@ const FooterOne = () => {
                     <Link to="/register" className="footer-lists__link">Registro</Link>
                   </li>
                   <li className="footer-lists__item">
-                    <Link to="/donaciones" className="footer-lists__link">Contáctanos</Link>
+                    <Link to="/donaciones" className="footer-lists__link">Donaciones</Link>
                   </li>
                 </ul>
               </div>

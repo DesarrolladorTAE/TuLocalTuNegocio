@@ -32,7 +32,7 @@ const BreadcrumbEight = () => {
                   </li>
                 </ul>
                 <h3 className="breadcrumb-two-content__title mb-0 text-capitalize">
-                  Inivtanos un café ☕
+                  Invitanos un café ☕
                 </h3>
               </div>
             </div>
