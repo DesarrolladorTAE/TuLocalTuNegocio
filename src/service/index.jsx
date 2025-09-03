@@ -362,6 +362,17 @@ export async function mostrarProducto(id) {
   }
 }
 
+//Funcion para Mostar un Productos
+export async function eliminarProducto(id) {
+  try {
+    const { data } = await axiosClient.post("producto/eliminar", { id: Number(id) });
+    return data;
+  } catch (error) {
+    console.error("Error al mostrar producto:", error?.response?.data || error.message);
+    throw new Error("No se pudo obtener la información del producto.");
+  }
+}
+
 
 //Productos de un vendedor
 export async function productosPorVendedor(vendedorID) {
@@ -529,7 +540,13 @@ export async function actualizarUsuario(fields = {}, opts = {}) {
     }
     if (st === 401) throw new Error("No autorizado (401).");
     if (st === 500) {
-      const msg = err?.response?.data?.message || "Error interno del servidor";
+      const payload = err?.response?.data || err?.response || {};
+      const msg =
+        payload?.message ||
+        payload?.error ||
+        payload?.errors?.[0] ||
+        payload?.errors?.general ||
+        "Error interno del servidor";
       throw new Error(msg);
     }
     throw new Error(err?.response?.data?.message || "No se pudo actualizar el perfil.");

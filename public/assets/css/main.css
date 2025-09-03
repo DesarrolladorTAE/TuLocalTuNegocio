@@ -5006,6 +5006,26 @@ input[type=number] {
     transition: 0.2s linear;
 }
 
+.product-item__delete {
+  position: absolute;
+  right: 8px;
+  top: 56px; /* 8px + 40px de alto + 8px de espacio */
+  width: 40px;
+  height: 40px;
+  border-radius: 30px;
+  background-color: hsl(var(--white)/0.5);
+  backdrop-filter: blur(5px);
+  color: hsl(var(--black));
+  z-index: 2;
+  transition: 0.2s linear;
+}
+
+.product-item__delete:hover {
+  background-color: hsl(0, 100%, 80%); /* un rojo clarito opcional */
+  color: hsl(var(--white));
+}
+
+
 .product-item__wishlist:active {
     transform: scale(1.15);
 }
@@ -9165,4 +9185,10 @@ input[type=number] {
 .footer-widget__logo img.footer-logo{
   width: auto !important;
   height: 50px !important;
+}
+
+.product-item__actions {
+  display: flex;
+  flex-direction: column; /* apila los botones uno debajo del otro */
+  gap: 6px; /* espacio opcional entre ellos */
 }

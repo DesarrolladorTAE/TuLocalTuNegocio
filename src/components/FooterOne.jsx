@@ -142,7 +142,7 @@ const FooterOne = () => {
               >
                 Políticas de Privacidad
               </button>
-              <Link to="/donaciones" className="footer-link font-14">Contacto</Link>
+              <Link to="/donaciones" className="footer-link font-14">Donaciones</Link>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { createProduct, actualizarUsuario } from "../service";
+import { createProduct, actualizarUsuario, eliminarProducto } from "../service";
 import { alertaSuccess, alertaError } from "../utils/alerts";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -696,6 +696,22 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
     onGoToEditTab?.();
   };
 
+  const handleDeleteProduct = (prod) => {
+    eliminarProducto(prod.id).then(() => {
+      alertaSuccess("Producto eliminado");
+      if (editingProductId === prod.id) {
+        // Si estabas editando este producto, limpia el formulario
+        reset();
+        setEditingProductId(null);
+        setCurrentImages([]);
+      }
+      refreshDatos(entity.id);
+    }).catch((err) => {
+      const msg = err?.response?.data?.message || "No se pudo eliminar el producto";
+      alertaError(msg);
+    });
+  };
+
   // Estado local de contacto
   const [contact, setContact] = useState({
     name: entity?.name || "",
@@ -1062,16 +1078,28 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                           <img src={mainImg?.img_url} alt={prod.name} className="cover-img" />
                         </Link>
                         {!isVendorView && (
-                          <button
-                            type="button"
-                            className="product-item__wishlist"
-                            aria-label="Wishlist"
-                            title="Editar producto"
-                            onClick={() => handleEditProduct(prod)}
-                          >
-                            <i className="fas fa-pen" />
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="product-item__wishlist"
+                              aria-label="Editar"
+                              title="Editar producto"
+                              onClick={() => handleEditProduct(prod)}
+                            >
+                              <i className="fas fa-pen" />
+                            </button>
+                            <button
+                              type="button"
+                              className="product-item__delete"
+                              aria-label="Eliminar"
+                              title="Eliminar producto"
+                              onClick={() => handleDeleteProduct(prod)}
+                            >
+                              <i className="fas fa-trash" />
+                            </button>
+                          </>
                         )}
+
                       </div>
                       <div className="product-item__content">
                         <h6 className="product-item__title">
