@@ -326,7 +326,7 @@ const Donation = () => {
                             {MXN(p)}
                           </button>
                         ))}
-                        <div className="d-flex align-items-center gap-2">
+                        {/* <div className="d-flex align-items-center gap-2">
                           <span className="text-muted">o</span>
                           <input
                             type="number"
@@ -339,7 +339,7 @@ const Donation = () => {
                             style={{ width: 160 }}
                             disabled={loading}
                           />
-                        </div>
+                        </div> */}
                       </div>
                       <div className="mt-2">
                         <strong>Total:</strong> {MXN(Math.max(0, effectiveAmount || 0))}
