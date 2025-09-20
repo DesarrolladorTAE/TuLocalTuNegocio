@@ -214,6 +214,7 @@ export async function createProduct(formData, onProgress) {
   // Normaliza a FormData
   let fd;
   if (formData instanceof FormData) {
+    // Si ya viene un FormData desde el componente, asumimos que ya agregó images_meta.
     fd = formData;
   } else {
     fd = new FormData();
@@ -222,6 +223,7 @@ export async function createProduct(formData, onProgress) {
       if (v !== undefined && v !== null && `${v}`.trim() !== "") fd.append(k, v);
     };
 
+    // ===== Campos base =====
     appendIf("id", d.id);
     appendIf("name", d.name);
     appendIf("description", d.description);
@@ -229,9 +231,17 @@ export async function createProduct(formData, onProgress) {
     appendIf("stock", d.stock);
     appendIf("category_id", d.category_id);
 
-    if (d.images) Array.from(d.images).slice(0, 10).forEach(file => fd.append("images[]", file, file.name));
-    (d.selected_address_ids || []).forEach(id => fd.append("address_ids[]", id));
+    // ===== Imágenes (máx. 10) =====
+    if (d.images) {
+      Array.from(d.images)
+        .slice(0, 10)
+        .forEach((file) => fd.append("images[]", file, file.name));
+    }
 
+    // ===== Localidades existentes =====
+    (d.selected_address_ids || []).forEach((id) => fd.append("address_ids[]", id));
+
+    // ===== Nueva localidad rápida (opcional) =====
     const a = d.new_address || {};
     const hasSingle = a.recipient || a.phone || a.street;
     if (hasSingle) {
@@ -247,6 +257,7 @@ export async function createProduct(formData, onProgress) {
       appendIf("address[references]", a.references);
     }
 
+    // ===== Pivot por defecto =====
     const dft = d.pivot_default || {};
     if (dft.stock !== "") fd.append("pivot[stock]", String(dft.stock));
     fd.append("pivot[is_active]", dft.is_active ? "1" : "0");
@@ -254,7 +265,8 @@ export async function createProduct(formData, onProgress) {
     if (dft.available_to) fd.append("pivot[available_to]", dft.available_to);
     if (dft.notes) fd.append("pivot[notes]", dft.notes);
 
-    (d.pivots || []).forEach(p => {
+    // ===== Overrides por sucursal =====
+    (d.pivots || []).forEach((p) => {
       const base = `pivots[${p.address_id}]`;
       if (p.stock !== "") fd.append(`${base}[stock]`, String(p.stock));
       fd.append(`${base}[is_active]`, p.is_active ? "1" : "0");
@@ -262,8 +274,60 @@ export async function createProduct(formData, onProgress) {
       if (p.available_to) fd.append(`${base}[available_to]`, p.available_to);
       if (p.notes) fd.append(`${base}[notes]`, p.notes);
     });
+
+    // ======== IMAGES META (titulo/precio/description/is_main) ========
+    // Preferimos d.images_meta si viene listo desde el componente.
+    // Si no, construimos a partir de arreglos paralelos.
+    const metaList = Array.isArray(d.images_meta) ? d.images_meta : null;
+
+    const normalizeAndAppendMeta = (list) => {
+      list.forEach((m, i) => {
+        // Normalizamos nombres aceptando title|titulo y price|precio
+        const index = typeof m.index === "number" ? m.index : i;
+        const titulo =
+          m.titulo ?? m.title ?? ""; // prioriza 'titulo'
+        const precioRaw = m.precio ?? m.price ?? "";
+        const precio =
+          precioRaw === "" ? "" : Number.isFinite(Number.parseFloat(precioRaw)) ? Number.parseFloat(precioRaw) : "";
+        const description = (m.description ?? "").toString().trim();
+        const isMain = m.is_main === true || m.is_main === "1" || m.is_main === 1;
+
+        fd.append(`images_meta[${i}][index]`, String(index));
+        if (titulo) fd.append(`images_meta[${i}][titulo]`, titulo);
+        if (precio !== "") fd.append(`images_meta[${i}][precio]`, String(precio));
+        if (description) fd.append(`images_meta[${i}][description]`, description);
+        fd.append(`images_meta[${i}][is_main]`, isMain ? "1" : "0");
+      });
+    };
+
+    if (metaList) {
+      // Caso 1: ya viene armado desde el componente
+      normalizeAndAppendMeta(metaList);
+    } else {
+      // Caso 2: construir desde arreglos paralelos (si existen)
+      const titles = d.imageTitles || d.image_titulos || [];
+      const prices = d.imagePrices || d.image_precios || [];
+      const descs = d.imageDescs || d.image_descriptions || [];
+      const mainIndex =
+        typeof d.mainIndex === "number" && d.mainIndex >= 0 ? d.mainIndex : 0;
+
+      // Longitud = cantidad de archivos que realmente se están enviando
+      const filesCount = d.images ? Math.min(10, Array.from(d.images).length) : 0;
+      const list = Array.from({ length: filesCount }).map((_, idx) => ({
+        index: idx,
+        // soporta ambos nombres de origen; el back espera 'titulo' y 'precio'
+        titulo: titles[idx] ?? "",
+        precio: prices[idx] ?? "",
+        description: descs[idx] ?? "",
+        is_main: idx === mainIndex,
+      }));
+
+      normalizeAndAppendMeta(list);
+    }
+    // ======== FIN IMAGES META ========
   }
 
+  // Detectar create vs update
   const rawId = fd.get("id");
   const id = rawId && `${rawId}`.trim() !== "" ? rawId : null;
 
@@ -273,15 +337,14 @@ export async function createProduct(formData, onProgress) {
     fd.append("_method", "POST"); // si tu backend usa POST como override
   }
 
-  // ⚠️ No fijes Content-Type; axios lo arma (con boundary)
   const res = await axiosClient.post(url, fd, {
-    headers: {}, // asegura que NO se arrastre 'application/json' de un interceptor
+    headers: {}, // NO fijes Content-Type; axios pone el boundary
     onUploadProgress: (e) => {
       if (!onProgress) return;
       const percent = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
       onProgress({ percent });
     },
-    transformRequest: [(data) => data], // evita serialización accidental
+    transformRequest: [(data) => data],
   });
 
   return res.data;

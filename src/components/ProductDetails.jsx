@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useAsyncError } from "react-router-dom";
+import { Link } from "react-router-dom";
 import MoreItems from "./MoreItems"; // ajusta la ruta si aplica
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,21 +27,43 @@ const orderImages = (images = []) => {
   return uniq.sort((a, b) => Number(b.is_main) - Number(a.is_main));
 };
 
-
 const ProductDetails = ({ product }) => {
-  // ✅ hooks siempre al tope, nunca detrás de un return
+  // ✅ hooks siempre al tope
   const imgs = useMemo(() => {
     const ordered = orderImages(product?.images || []);
-    const arr = ordered.length
-      ? ordered.map((i) => i.img_url)
-      : ["/assets/images/nuevas/imagendefault.png"];
-    return arr.slice(0, 10); // hasta 10
-  }, [product?.images]);
+
+    // Mapeamos a objetos ricos con fallback
+    const mapped = ordered.map((i) => ({
+      src: i.img_url,
+      titulo: i.titulo?.trim?.() ? i.titulo : product?.name ?? "Producto",
+      precio:
+        i.precio != null && i.precio !== ""
+          ? Number(i.precio)
+          : Number(product?.price ?? 0),
+      description: i.description ?? "",
+      is_main: !!i.is_main,
+    }));
+
+    // Si no hay imágenes, usamos una de fallback con datos del producto
+    if (!mapped.length) {
+      return [
+        {
+          src: "/assets/images/nuevas/imagendefault.png",
+          titulo: product?.name ?? "Producto",
+          precio: Number(product?.price ?? 0),
+          description: product?.description ?? "",
+          is_main: true,
+        },
+      ];
+    }
+
+    return mapped.slice(0, 10); // hasta 10
+  }, [product?.images, product?.name, product?.price, product?.description]);
 
   const [idx, setIdx] = useState(0);
   const total = imgs.length;
   const [mensaje, setMensaje] = useState("");
-  const userlog = !!(localStorage.getItem('token'));
+  const userlog = !!localStorage.getItem("token");
 
   useEffect(() => {
     setIdx(0); // reset al cambiar de producto
@@ -73,16 +95,14 @@ const ProductDetails = ({ product }) => {
   const category = product.category || {};
 
   function encodeWhatsApp(text) {
-    return text
-      .replace(/\n/g, "%0A")   // solo reemplazar saltos de línea
-      .replace(/ /g, "%20");   // y espacios
+    return text.replace(/\n/g, "%0A").replace(/ /g, "%20");
   }
 
   const handleEnviar = (e) => {
     e.preventDefault();
     if (!mensaje.trim()) return;
 
-    const baseUrl = 'https://tulocaltunego.com/api/graph/producto/';
+    const baseUrl = "https://tulocaltunego.com/api/graph/producto/";
     const urlProducto = `${baseUrl}${product.id}`;
 
     // PRIMERA línea solo el link => ayuda a preview grande
@@ -95,10 +115,18 @@ const ProductDetails = ({ product }) => {
 
     baseMensaje += mensaje;
 
-    const enlace = `https://wa.me/${vendor.phone}?text=${encodeWhatsApp(baseMensaje)}`;
+    const enlace = `https://wa.me/${vendor.phone}?text=${encodeWhatsApp(
+      baseMensaje
+    )}`;
     window.open(enlace, "_blank");
   };
 
+  // 👉 Datos calculados por imagen activa
+  const active = imgs[idx] || {};
+  const activeTitulo = active.titulo ?? product?.name ?? "Producto";
+  const activePrecio =
+    active.precio != null ? active.precio : Number(product?.price ?? 0);
+  const activeDesc = active.description ?? "";
 
   return (
     <div className="product-details mt-32 padding-b-120">
@@ -123,23 +151,46 @@ const ProductDetails = ({ product }) => {
                   style={{ outline: "none" }}
                 >
                   <img
-                    src={imgs[idx]}
-                    alt={`${product.name} - imagen ${idx + 1}`}
-                    className="w-100 rounded" // Bootstrap utilities
+                    src={active.src}
+                    alt={`${activeTitulo} - imagen ${idx + 1}`}
+                    className="w-100 rounded"
                     style={{ objectFit: "cover", maxHeight: 500 }}
                   />
 
-                  {/* 👇 Overlay con Bootstrap */}
-                  {product.images?.[idx]?.description && (
+                  {/* 👇 Overlay inferior: descripción (si hay) */}
+                  {activeDesc && (
                     <div
                       className="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-50 text-white p-2"
-                      style={{ borderBottomLeftRadius: "8px", borderBottomRightRadius: "8px" }}
+                      style={{
+                        borderBottomLeftRadius: "8px",
+                        borderBottomRightRadius: "8px",
+                      }}
                     >
                       <small className="d-block text-truncate">
-                        {product.images[idx].description}
+                        {activeDesc}
                       </small>
                     </div>
                   )}
+
+                  {/* 👇 Overlay superior: título + precio por imagen */}
+                  <div
+                    className="position-absolute top-0 start-0 m-2 px-3 py-2 bg-white shadow-sm"
+                    style={{ borderRadius: 8, maxWidth: "90%" }}
+                    aria-live="polite"
+                  >
+                    <div
+                      className="fw-600"
+                      style={{ lineHeight: 1.2, fontSize: 14 }}
+                    >
+                      {activeTitulo}
+                    </div>
+                    <div
+                      className="text-main fw-700"
+                      style={{ lineHeight: 1.2, fontSize: 16 }}
+                    >
+                      {money(activePrecio)}
+                    </div>
+                  </div>
 
                   {total > 1 && (
                     <>
@@ -177,23 +228,24 @@ const ProductDetails = ({ product }) => {
                   )}
                 </div>
 
-
                 {total > 1 && (
                   <div className="d-flex gap-2 mt-3 flex-wrap">
-                    {imgs.map((src, i) => (
+                    {imgs.map((img, i) => (
                       <button
-                        key={src + i}
+                        key={(img.src || "") + i}
                         type="button"
                         onClick={() => setIdx(i)}
-                        className="p-0 border-0"
+                        className="p-0 border-0 position-relative"
                         style={{
                           outline: "none",
                           borderRadius: 6,
-                          boxShadow: i === idx ? "0 0 0 2px var(--main)" : "none",
+                          boxShadow:
+                            i === idx ? "0 0 0 2px var(--main)" : "none",
                         }}
+                        title={`${img.titulo} – ${money(img.precio)}`}
                       >
                         <img
-                          src={src}
+                          src={img.src}
                           alt={`miniatura ${i + 1}`}
                           style={{
                             width: 72,
@@ -203,24 +255,26 @@ const ProductDetails = ({ product }) => {
                             opacity: i === idx ? 1 : 0.7,
                           }}
                         />
+                        {/* badge precio miniatura */}
+                        <span
+                          className="position-absolute bottom-0 start-0 px-1 py-0 bg-white"
+                          style={{
+                            fontSize: 10,
+                            borderBottomLeftRadius: 6,
+                            borderTopRightRadius: 6,
+                          }}
+                        >
+                          {money(img.precio)}
+                        </span>
                       </button>
                     ))}
                   </div>
                 )}
                 {/* ===== Fin Carrusel ===== */}
 
-                {/* Botones opcionales */}
-                <div className="product-details__buttons flx-align justify-content-center gap-3 mt-3">
-                  <Link
-                    to="#"
-                    className="btn btn-main d-inline-flex align-items-center gap-2 pill px-sm-5 justify-content-center"
-                  >
-                    Ver producto
-                    <img src="/assets/images/icons/eye-outline.svg" alt="" />
-                  </Link>
-                </div>
-
+                {/* Título general del producto (se mantiene) */}
                 <h1 className="mt-4">{product.name}</h1>
+
                 <div className="mb-0 markdown-body" style={{ flex: 1 }}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {product.description}
@@ -228,26 +282,36 @@ const ProductDetails = ({ product }) => {
                 </div>
 
                 <div className="product-details__item">
-                  <h5 className="product-details__title mb-3">Detalles del producto</h5>
+                  <h5 className="product-details__title mb-3">
+                    Detalles del producto
+                  </h5>
                   <ul className="product-list">
-                    <li className="product-list__item"><strong>Categoría:</strong> {category.name || "-"}</li>
-                    <li className="product-list__item"><strong>Stock:</strong> {product.stock ?? 0}</li>
-                    <li className="product-list__item"><strong>Estatus:</strong> {product.status}</li>
+                    <li className="product-list__item">
+                      <strong>Categoría:</strong> {category.name || "-"}
+                    </li>
+                    <li className="product-list__item">
+                      <strong>Stock:</strong> {product.stock ?? 0}
+                    </li>
+                    <li className="product-list__item">
+                      <strong>Estatus:</strong> {product.status}
+                    </li>
                   </ul>
                 </div>
 
                 {category?.image_url && (
-                  <Link
-                    to={`/all-product?cat=${category.id}`}
-                    className=""
-                  >
+                  <Link to={`/all-product?cat=${category.id}`} className="">
                     <div className="product-details__item">
                       <h5 className="product-details__title mb-3">Categoría</h5>
                       <div className="d-flex align-items-center gap-3">
                         <img
                           src={category.image_url}
                           alt={category.name}
-                          style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }}
+                          style={{
+                            width: 80,
+                            height: 80,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                          }}
                         />
                         <div>
                           <div className="fw-600">{category.name}</div>
@@ -259,29 +323,39 @@ const ProductDetails = ({ product }) => {
                 )}
 
                 {vendor?.id && (
-                  <Link
-                    to={`/vendor/${vendor.id}`}
-                    className=""
-                  >
+                  <Link to={`/vendor/${vendor.id}`} className="">
                     <div className="product-details__item">
                       <h5 className="product-details__title mb-3">Vendedor</h5>
                       <div className="d-flex align-items-center gap-3">
                         <img
-                          src={vendor.avatar_url || "/assets/images/thumbs/author-details-img.png"}
+                          src={
+                            vendor.avatar_url ||
+                            "/assets/images/thumbs/author-details-img.png"
+                          }
                           alt={vendor.name}
-                          style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%" }}
+                          style={{
+                            width: 64,
+                            height: 64,
+                            objectFit: "cover",
+                            borderRadius: "50%",
+                          }}
                         />
                         <div>
                           <div className="fw-600">{vendor.name}</div>
                           <div className="text-body">{vendor.email}</div>
-                          {vendor.phone && <div className="text-body">{vendor.phone}</div>}
+                          {vendor.phone && (
+                            <div className="text-body">{vendor.phone}</div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </Link>
                 )}
 
-                <MoreItems vendorId={vendor?.id} currentProductId={product.id} />
+                <MoreItems
+                  vendorId={vendor?.id}
+                  currentProductId={product.id}
+                />
               </div>
             </div>
           </div>
@@ -289,57 +363,81 @@ const ProductDetails = ({ product }) => {
           <div className="col-lg-4">
             <div className="product-sidebar section-bg">
               <div className="product-sidebar__top position-relative flx-between gap-1">
+                {/* 👉 Precio dinámico por imagen con fallback */}
                 <h6 className="product-sidebar__title mb-0">
-                  {money(product.price)}
+                  {money(activePrecio)}
                 </h6>
               </div>
 
               <ul className="sidebar-list mt-3">
                 <li className="sidebar-list__item flx-align gap-2 font-14 fw-300 mb-2">
-                  <span className="icon"><img src="/assets/images/icons/check-cirlce.svg" alt="" /></span>
+                  <span className="icon">
+                    <img src="/assets/images/icons/check-cirlce.svg" alt="" />
+                  </span>
                   <span className="text">Producto verificado</span>
                 </li>
                 <li className="sidebar-list__item flx-align gap-2 font-14 fw-300 mb-2">
-                  <span className="icon"><img src="/assets/images/icons/check-cirlce.svg" alt="" /></span>
+                  <span className="icon">
+                    <img src="/assets/images/icons/check-cirlce.svg" alt="" />
+                  </span>
                   <span className="text">En stock: {product.stock ?? 0}</span>
                 </li>
                 <li className="sidebar-list__item flx-align gap-2 font-14 fw-300">
-                  <span className="icon"><img src="/assets/images/icons/check-cirlce.svg" alt="" /></span>
-                  <span className="text">Categoría: {category.name || "-"}</span>
+                  <span className="icon">
+                    <img src="/assets/images/icons/check-cirlce.svg" alt="" />
+                  </span>
+                  <span className="text">
+                    Categoría: {category.name || "-"}
+                  </span>
                 </li>
               </ul>
-
-              {/* <button type="button" className="btn btn-main d-flex w-100 justify-content-center align-items-center gap-2 pill px-sm-5 mt-32">
-                <img src="/assets/images/icons/add-to-cart.svg" alt="" />
-                Agregar al carrito
-              </button> */}
 
               {vendor?.id && (
                 <div className="author-details mt-4">
                   <div className="d-flex align-items-center gap-2">
                     <div className="author-details__thumb flex-shrink-0">
                       <img
-                        src={vendor.avatar_url || "/assets/images/thumbs/author-details-img.png"}
+                        src={
+                          vendor.avatar_url ||
+                          "/assets/images/thumbs/author-details-img.png"
+                        }
                         alt={vendor.name}
                       />
                     </div>
                     <div className="author-details__content">
                       <h6 className="author-details__name font-18 mb-2">
-                        <span className="link hover-text-main">{vendor.name}</span>
+                        <span className="link hover-text-main">
+                          {vendor.name}
+                        </span>
                       </h6>
                       <span className="d-flex align-items-center gap-1">
                         <span className="star-rating">
-                          <span className="star-rating__item font-11"><i className="fas fa-star" /></span>
-                          <span className="star-rating__item font-11"><i className="fas fa-star" /></span>
-                          <span className="star-rating__item font-11"><i className="fas fa-star" /></span>
-                          <span className="star-rating__item font-11"><i className="fas fa-star" /></span>
-                          <span className="star-rating__item font-11"><i className="fas fa-star" /></span>
+                          <span className="star-rating__item font-11">
+                            <i className="fas fa-star" />
+                          </span>
+                          <span className="star-rating__item font-11">
+                            <i className="fas fa-star" />
+                          </span>
+                          <span className="star-rating__item font-11">
+                            <i className="fas fa-star" />
+                          </span>
+                          <span className="star-rating__item font-11">
+                            <i className="fas fa-star" />
+                          </span>
+                          <span className="star-rating__item font-11">
+                            <i className="fas fa-star" />
+                          </span>
                         </span>
                         <span className="star-rating__text text-body"> 5.0</span>
                       </span>
                     </div>
                   </div>
-                  <Link to={userlog ? `/vendor/${vendor.id}` : '/login'} className="btn btn-outline-light w-100 pill mt-32" >Ver perfil del vendedor</Link>
+                  <Link
+                    to={userlog ? `/vendor/${vendor.id}` : "/login"}
+                    className="btn btn-outline-light w-100 pill mt-32"
+                  >
+                    Ver perfil del vendedor
+                  </Link>
                 </div>
               )}
 
@@ -347,9 +445,7 @@ const ProductDetails = ({ product }) => {
                 <li className="meta-attribute__item">
                   <span className="name">Télefono</span>
                   <span className="details">
-                    <a href={"tel:" + vendor.phone}>
-                      {vendor.phone}
-                    </a>
+                    <a href={"tel:" + vendor.phone}>{vendor.phone}</a>
                   </span>
                 </li>
                 <li className="meta-attribute__item">
@@ -387,7 +483,6 @@ const ProductDetails = ({ product }) => {
               </ul>
             </div>
           </div>
-
         </div>
       </div>
     </div>

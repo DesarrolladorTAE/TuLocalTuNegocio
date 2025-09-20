@@ -42,6 +42,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
   const [editingProductId, setEditingProductId] = useState(null);
   const [currentImages, setCurrentImages] = useState([]);
   const [imageDescs, setImageDescs] = useState(Array(MAX_FILES).fill("")); // descripción por slot
+  // 👇 nuevos: título y precio por slot
+  const [imageTitles, setImageTitles] = useState(Array(MAX_FILES).fill(""));
+  const [imagePrices, setImagePrices] = useState(Array(MAX_FILES).fill(""));
   const [mainIndex, setMainIndex] = useState(0); // cuál será la imagen principal
 
 
@@ -157,7 +160,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       alertaError("Solo puedes subir hasta 10 imágenes.");
       return;
     }
-    const tooBig = merged.find((f) => f.size > 2 * 1024 * 1024);
+    const tooBig = merged.find((f) => f.size > 5 * 1024 * 1024);
     if (tooBig) {
       alertaError(`"${tooBig.name}" excede 2MB.`);
       return;
@@ -168,6 +171,20 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       // si entran más archivos, asegúrate de tener slots vacíos para ellos
       while (next.length < merged.length) next.push("");
       // si se recortó por tope 10, también recorta descripciones
+      return next.slice(0, merged.length);
+    });
+
+    // 👇 Títulos
+    setImageTitles((prev) => {
+      const next = [...prev];
+      while (next.length < merged.length) next.push("");
+      return next.slice(0, merged.length);
+    });
+
+    // 👇 Precios
+    setImagePrices((prev) => {
+      const next = [...prev];
+      while (next.length < merged.length) next.push("");
       return next.slice(0, merged.length);
     });
   };
@@ -208,13 +225,25 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
   );
   const onPick = (e) => validateAndSetFiles(e.target.files);
   const removeFileAt = (idx) => {
-    setFiles(arr => arr.filter((_, i) => i !== idx));
-    setImageDescs(arr => {
+    setFiles((arr) => arr.filter((_, i) => i !== idx));
+
+    setImageDescs((arr) => {
       const next = arr.filter((_, i) => i !== idx);
       return next.length ? next : Array(MAX_FILES).fill("");
     });
-    // si quitaste la principal, reubica principal al 0 o al previo
-    setMainIndex(i => (i === idx ? 0 : i > idx ? i - 1 : i));
+
+    // 👇 nuevos:
+    setImageTitles((arr) => {
+      const next = arr.filter((_, i) => i !== idx);
+      return next.length ? next : Array(MAX_FILES).fill("");
+    });
+
+    setImagePrices((arr) => {
+      const next = arr.filter((_, i) => i !== idx);
+      return next.length ? next : Array(MAX_FILES).fill("");
+    });
+
+    setMainIndex((i) => (i === idx ? 0 : i > idx ? i - 1 : i));
   };
   const openPicker = () => inputRef.current?.click();
   const prevent = (e) => {
@@ -257,16 +286,26 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       if (data.category_id) fd.append("category_id", data.category_id);
       if (data.description) fd.append("description", data.description);
 
-      const imagesMeta = files.map((_, idx) => ({
-        index: idx,
-        description: (imageDescs[idx] || "").trim(),
-        is_main: idx === mainIndex,
-      }));
+      const imagesMeta = files.map((_, idx) => {
+        const rawPrice = (imagePrices[idx] ?? "").toString().trim();
+        const parsed = rawPrice === "" ? "" : Number.parseFloat(rawPrice);
+        const price = Number.isFinite(parsed) ? parsed : ""; // evita NaN
+
+        return {
+          index: idx,
+          title: (imageTitles[idx] || "").trim(),     // 👈 nuevo
+          price,                                      // 👈 nuevo (num o "")
+          description: (imageDescs[idx] || "").trim(),
+          is_main: idx === mainIndex,
+        };
+      });
 
       imagesMeta.forEach((m, i) => {
         fd.append(`images_meta[${i}][index]`, String(m.index));
+        if (m.title) fd.append(`images_meta[${i}][title]`, m.title);     // 👈 nuevo
+        if (m.price !== "") fd.append(`images_meta[${i}][price]`, String(m.price)); // 👈 nuevo
         if (m.description) fd.append(`images_meta[${i}][description]`, m.description);
-        fd.append(`images_meta[${i}][is_main]`, m.is_main ? '1' : '0'); // boolean como "1"/"0"
+        fd.append(`images_meta[${i}][is_main]`, m.is_main ? "1" : "0");
       });
 
       files.forEach((file) => {
@@ -335,8 +374,10 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
         (errors422 && Object.values(errors422)?.[0]?.[0]) ||
         (isUpdate ? "No se pudo actualizar el producto" : "No se pudo crear el producto");
 
+      const detalle =  err?.response?.data?.detail || '';
+
       if (errors422) applyServerErrors(errors422);
-      alertaError(msg);
+      alertaError(msg, detalle);
     }
   };
 
@@ -1697,7 +1738,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
 
                           <div role="button" onClick={openPicker} className="w-100 mb-3 p-3 text-center border border-dashed rounded" style={{ borderStyle: "dashed", cursor: "pointer" }}>
                             <div className="mb-1 fw-semibold  form-label">Arrastra y suelta aquí</div>
-                            <small className="text-muted">o haz clic para seleccionar (máx. 10, 2MB c/u)</small>
+                            <small className="text-muted">o haz clic para seleccionar (máx. 10, 5MB c/u)</small>
                           </div>
                           {editingProductId && currentImages?.length > 0 && (
                             <div className="mb-3">
@@ -1732,8 +1773,13 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                               return (
                                 <div className="col-6 col-sm-4 col-md-3 col-lg-2" key={i}>
                                   <div
-                                    className="position-relative border rounded d-flex align-items-center justify-content-center"
-                                    style={{ width: "100%", paddingTop: "100%", overflow: "hidden" }}
+                                    className="position-relative border rounded d-flex align-items-center justify-content-center bg-light"
+                                    style={{
+                                      width: "100%",
+                                      aspectRatio: "1 / 1",        // cuadrado sin paddingTop hack
+                                      overflow: "hidden",          // oculta desbordes de seguridad
+                                      cursor: "pointer",
+                                    }}
                                     onClick={openPicker}
                                   >
                                     {f ? (
@@ -1742,13 +1788,19 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                           src={previews[i]}
                                           alt={`img-${i}`}
                                           loading="lazy"
-                                          className="position-absolute top-0 start-0 w-100 h-100"
-                                          style={{ objectFit: "cover" }}
+                                          className="position-absolute top-0 start-0"
+                                          style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",   // muestra completa sin recortar
+                                            // Opcional: mejorar nitidez al escalar
+                                            imageRendering: "auto",
+                                          }}
                                         />
                                         <button
                                           type="button"
                                           className="btn btn-sm btn-danger position-absolute"
-                                          style={{ top: 6, right: 6 }}
+                                          style={{ top: 6, right: 6, zIndex: 2 }}
                                           onClick={(e) => { e.stopPropagation(); removeFileAt(i); }}
                                           aria-label="Eliminar imagen"
                                         >
@@ -1765,9 +1817,49 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                     )}
                                   </div>
 
+
                                   {/* 👇 Campos adicionales solo cuando hay archivo */}
                                   {f && (
                                     <div className="mt-2">
+                                      {/* Título por imagen */}
+                                      <input
+                                        className="common-input radius-8 w-100 mb-2"
+                                        type="text"
+                                        placeholder="Título de la imagen"
+                                        value={imageTitles[i] ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setImageTitles((prev) => {
+                                            const next = [...prev];
+                                            next[i] = val;
+                                            return next;
+                                          });
+                                        }}
+                                        maxLength={255}
+                                      />
+
+                                      {/* Precio por imagen */}
+                                      <input
+                                        className="common-input radius-8 w-100 mb-2"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="Precio $ (MXN)"
+                                        value={imagePrices[i] ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          // Permitimos vacío o número
+                                          if (val === "" || /^(\d+)(\.\d{0,2})?$/.test(val)) {
+                                            setImagePrices((prev) => {
+                                              const next = [...prev];
+                                              next[i] = val;
+                                              return next;
+                                            });
+                                          }
+                                        }}
+                                        inputMode="decimal"
+                                      />
+
                                       {/* Descripción por imagen */}
                                       <textarea
                                         className="common-input radius-8 w-100"
@@ -1776,13 +1868,13 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                         value={imageDescs[i] ?? ""}
                                         onChange={(e) => {
                                           const val = e.target.value;
-                                          setImageDescs(prev => {
+                                          setImageDescs((prev) => {
                                             const next = [...prev];
                                             next[i] = val;
                                             return next;
                                           });
                                         }}
-                                        maxLength={2000}
+                                        maxLength={5120}
                                       />
 
                                       {/* Selector de principal */}
@@ -1801,6 +1893,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                       </div>
                                     </div>
                                   )}
+
                                 </div>
                               );
                             })}

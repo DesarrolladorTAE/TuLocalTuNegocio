@@ -25,17 +25,19 @@ export const alertaSuccess = (mensaje, callback = null) => {
 /**
  * Alerta de error
  */
-export const alertaError = (mensaje) => {
+export const alertaError = (mensaje, detalle) => {
+  const texto = mensaje + ': ' + detalle;
   Swal.fire({
     icon: 'error',
     title: 'Error',
-    text: mensaje,
+    text: texto,
     confirmButtonText: 'Aceptar',
     confirmButtonColor: colorError,
-    background:colorPrincipal,
+    background: colorPrincipal,
     color: '#fff',
   });
 };
+
 
 /**
  * Alerta de confirmación con dos botones (Sí / Cancelar)
