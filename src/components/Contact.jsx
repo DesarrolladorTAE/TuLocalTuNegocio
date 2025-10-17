@@ -13,22 +13,18 @@ function loadPayPal({
   clientId,
   currency = "MXN",
   locale = "es_MX",
-  buyerCountry = "MX",
-  components = "buttons,card-fields,marks",
+  components = "buttons,marks",   // 👈 sin card-fields
 } = {}) {
   if (!clientId) return Promise.reject(new Error("Falta clientId de PayPal"));
-
   const id = "paypal-sdk";
-
-  // Construye el src deseado
   const params = new URLSearchParams({
     "client-id": clientId,
     currency,
     locale,
-    "buyer-country": buyerCountry,
     components,
+    intent: "capture",
   });
-  const desiredSrc = `${PAYPAL_SDK_URL}?${params.toString()}`;
+  const desiredSrc = `https://www.paypal.com/sdk/js?${params.toString()}`;
 
   // Si ya hay un script pero con otros parámetros, lo reemplazamos
   const existing = document.getElementById(id);
@@ -134,7 +130,8 @@ const Donation = () => {
   // - hay SDK cargado
   // - cambia el monto
   useEffect(() => {
-    const clientId = 'AS3a537j_dcBoFPyBdmBw33baejtwUUbmco-gdq7C3Q45kFn9m1fkBMQA0xYd6Yr6CfFMSx9MMCjReLD';
+    const clientId = 'AfcK74JpIOLk5mi45WsZPvO3czidSwv6abSUBZjS6xlHdacJ-IKjOrUpmHCJ4asVDFAaC_mqglu8Hgwe'; //prodccion
+    // const clientId = 'AS3a537j_dcBoFPyBdmBw33baejtwUUbmco-gdq7C3Q45kFn9m1fkBMQA0xYd6Yr6CfFMSx9MMCjReLD'; // desarrollo
     if (tab !== "paypal" || !clientId) return;
 
     setErr("");
@@ -143,7 +140,7 @@ const Donation = () => {
       currency: "MXN",
       locale: "es_MX",
       buyerCountry: "MX",
-      components: "buttons,card-fields,marks",
+      components: "buttons",
     })
       .then((paypal) => {
         // Limpia el contenedor para re-render por cambio de monto
