@@ -162,7 +162,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
     }
     const tooBig = merged.find((f) => f.size > 5 * 1024 * 1024);
     if (tooBig) {
-      alertaError(`"${tooBig.name}" excede 2MB.`);
+      alertaError(`"${tooBig.name}" excede 5MB.`);
       return;
     }
     setFiles(merged);
