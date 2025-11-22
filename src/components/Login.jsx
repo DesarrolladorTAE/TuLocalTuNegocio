@@ -63,7 +63,7 @@ const Login = () => {
       if (response.user.role === 3) {
         navigate("/dashboard");
       } else {
-        navigate("/");
+        navigate("/profile");
       }
     } catch (err) {
       const { response } = err || {};

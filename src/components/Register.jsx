@@ -122,7 +122,7 @@ const Register = () => {
       // Llamada a tu API
       await apiRegister(data);
       openSnack("Cuenta creada con éxito. ¡Bienvenido!", "success");
-      navigate("/");
+      navigate("/profile");
     } catch (err) {
       // Si no es error de Axios, notifica genérico
       const response = err?.response;

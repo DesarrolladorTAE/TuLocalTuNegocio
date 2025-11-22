@@ -143,19 +143,49 @@ const ProductDetails = ({ product }) => {
               >
                 {/* ===== Carrusel ===== */}
                 <div
-                  className="product-details__thumb position-relative"
+                  className="product-details__thumb position-relative overflow-hidden"
                   tabIndex={0}
                   onKeyDown={onKey}
                   onTouchStart={onTouchStart}
                   onTouchEnd={onTouchEnd}
-                  style={{ outline: "none" }}
+                  style={{
+                    outline: "none",
+                    borderRadius: 8,
+                  }}
                 >
-                  <img
-                    src={active.src}
-                    alt={`${activeTitulo} - imagen ${idx + 1}`}
-                    className="w-100 rounded"
-                    style={{ objectFit: "cover", maxHeight: 500 }}
+                  {/* 🔹 Fondo borroso usando la misma imagen */}
+                  <div
+                    aria-hidden="true"
+                    className="position-absolute top-0 start-0 w-100 h-100"
+                    style={{
+                      backgroundImage: `url(${active.src})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      filter: "blur(18px)",
+                      transform: "scale(1.1)", // evita bordes duros del blur
+                      opacity: 0.85,
+                      zIndex: 0,
+                    }}
                   />
+
+                  {/* 🔹 Contenedor de la imagen principal (sin recortar) */}
+                  <div
+                    className="position-relative d-flex align-items-center justify-content-center w-100"
+                    style={{
+                      aspectRatio: "4 / 3",   // puedes ajustar a 16/9, 1/1, etc.
+                      maxHeight: 480,
+                      zIndex: 1,
+                    }}
+                  >
+                    <img
+                      src={active.src}
+                      alt={`${activeTitulo} - imagen ${idx + 1}`}
+                      className="w-100 h-100"
+                      style={{
+                        objectFit: "contain", // 👈 clave para NO recortar
+                      }}
+                    />
+                  </div>
 
                   {/* 👇 Overlay inferior: descripción (si hay) */}
                   {activeDesc && (
@@ -164,6 +194,7 @@ const ProductDetails = ({ product }) => {
                       style={{
                         borderBottomLeftRadius: "8px",
                         borderBottomRightRadius: "8px",
+                        zIndex: 2,
                       }}
                     >
                       <small className="d-block text-truncate">
@@ -175,7 +206,7 @@ const ProductDetails = ({ product }) => {
                   {/* 👇 Overlay superior: título + precio por imagen */}
                   <div
                     className="position-absolute top-0 start-0 m-2 px-3 py-2 bg-white shadow-sm"
-                    style={{ borderRadius: 8, maxWidth: "90%" }}
+                    style={{ borderRadius: 8, maxWidth: "90%", zIndex: 2 }}
                     aria-live="polite"
                   >
                     <div
@@ -205,6 +236,7 @@ const ProductDetails = ({ product }) => {
                           transform: "translateY(-50%)",
                           borderRadius: 999,
                           padding: "8px 10px",
+                          zIndex: 2,
                         }}
                       >
                         <i className="fas fa-chevron-left" />
@@ -220,6 +252,7 @@ const ProductDetails = ({ product }) => {
                           transform: "translateY(-50%)",
                           borderRadius: 999,
                           padding: "8px 10px",
+                          zIndex: 2,
                         }}
                       >
                         <i className="fas fa-chevron-right" />
@@ -227,7 +260,6 @@ const ProductDetails = ({ product }) => {
                     </>
                   )}
                 </div>
-
                 {total > 1 && (
                   <div className="d-flex gap-2 mt-3 flex-wrap">
                     {imgs.map((img, i) => (

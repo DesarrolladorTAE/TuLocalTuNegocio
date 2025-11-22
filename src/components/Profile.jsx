@@ -5,6 +5,7 @@ import { alertaSuccess, alertaError } from "../utils/alerts";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { handleHttpError } from "../utils/httpErrorHandler";
 
 
 const emptyAddress = {
@@ -62,8 +63,12 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
   // Filtrado por categoría y nombre
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchCat = selectedCat ? p.category.id === selectedCat : true;
-      const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const nombre = (p?.name ?? "").toString().toLowerCase();
+      const term = (searchTerm ?? "").toString().toLowerCase();
+
+      const matchCat = selectedCat ? p?.category?.id === selectedCat : true;
+      const matchSearch = nombre.includes(term);
+
       return matchCat && matchSearch;
     });
   }, [products, selectedCat, searchTerm]);
@@ -369,12 +374,13 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
     } catch (err) {
       const errors422 = err?.response?.data?.errors;
       const isUpdate = !!data.id;
+      handleHttpError(err, "No se pudo crear el producto.");
       const msg =
         err?.response?.data?.message ||
         (errors422 && Object.values(errors422)?.[0]?.[0]) ||
         (isUpdate ? "No se pudo actualizar el producto" : "No se pudo crear el producto");
 
-      const detalle =  err?.response?.data?.detail || '';
+      const detalle = err?.response?.data?.detail || '';
 
       if (errors422) applyServerErrors(errors422);
       alertaError(msg, detalle);
@@ -416,7 +422,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       setEditingDescripcion(false);
     } catch (err) {
       console.error(err);
-      alertaError(err.message || "No se pudo actualizar la descripción.");
+      // alertaError(err.message || "No se pudo actualizar la descripción.");
+      handleHttpError(err, "No se pudo actualizar la descripción.");
+
     } finally {
       setSavingDescripcion(false);
     }
@@ -796,7 +804,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       await actualizarUsuario(payload);
       onUpdated?.(); // ya lo tienes como prop; refresca entity desde el padre si aplica
     } catch (err) {
-      alertaError(err);
+      // alertaError(err);
+      handleHttpError(err, "No se pudo actualizar los datos de contacto.");
+
     } finally {
       setSavingContact(false);
     }
@@ -1238,10 +1248,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                 type="text"
                                 className="common-input common-input--md border--color-dark bg--white"
                                 placeholder="Ej. Café molido 500g"
-                                {...register("name", {
-                                  required: "El nombre del producto es obligatorio.",
-                                  maxLength: { value: 255, message: "Máximo 255 caracteres." },
-                                })}
+                                {...register("name")}
                               />
                               <FieldError error={errors.name} />
                             </div>
@@ -1254,11 +1261,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                 step="0.01"
                                 placeholder="0.00"
                                 className="common-input common-input--md border--color-dark bg--white"
-                                {...register("price", {
-                                  required: "El precio es obligatorio.",
-                                  valueAsNumber: true,
-                                  min: { value: 0, message: "El precio no puede ser negativo." },
-                                })}
+                                {...register("price")}
                               />
                               <FieldError error={errors.price} />
                             </div>
@@ -1271,11 +1274,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                 step="1"
                                 placeholder="0"
                                 className="common-input common-input--md border--color-dark bg--white"
-                                {...register("stock", {
-                                  required: "El stock es obligatorio.",
-                                  valueAsNumber: true,
-                                  min: { value: 0, message: "El stock no puede ser negativo." },
-                                })}
+                                {...register("stock")}
                               />
                               <FieldError error={errors.stock} />
                             </div>
@@ -1403,9 +1402,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                             type="text"
                                             className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Encargado del local"
-                                            {...register("new_address.recipient", {
-                                              required: exigirNueva ? "Este campo es obligatorio" : false,
-                                            })}
+                                            {...register("new_address.recipient")}
                                           />
                                           <FieldError error={errors?.new_address?.recipient} />
                                         </div>
@@ -1416,9 +1413,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                             type="tel"
                                             className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="10 dígitos"
-                                            {...register("new_address.phone", {
-                                              required: exigirNueva ? "Este campo es obligatorio" : false,
-                                            })}
+                                            {...register("new_address.phone")}
                                           />
                                           <FieldError error={errors?.new_address?.phone} />
                                         </div>
@@ -1429,9 +1424,7 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
                                             type="text"
                                             className="common-input common-input--md border--color-dark bg--white"
                                             placeholder="Ej. Av. Reforma"
-                                            {...register("new_address.street", {
-                                              required: exigirNueva ? "Este campo es obligatorio" : false,
-                                            })}
+                                            {...register("new_address.street")}
                                           />
                                           <FieldError error={errors?.new_address?.street} />
                                         </div>
