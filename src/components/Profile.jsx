@@ -165,9 +165,9 @@ const Profile = ({ onGoToEditTab, isVendorView = false, entity, onUpdated, canEd
       alertaError("Solo puedes subir hasta 10 imágenes.");
       return;
     }
-    const tooBig = merged.find((f) => f.size > 5 * 1024 * 1024);
+    const tooBig = merged.find((f) => f.size > 10 * 1024 * 1024);
     if (tooBig) {
-      alertaError(`"${tooBig.name}" excede 5MB.`);
+      alertaError(`"${tooBig.name}" excede 10MB.`);
       return;
     }
     setFiles(merged);
